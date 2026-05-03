@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chennai Traffic Simulation System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="app-header">
+    <div class="header-inner">
+        <div class="header-logo">
+            <div class="logo-icon">🚦</div>
+            <div>
+                <h1>Traffic Flow Simulation</h1>
+                <p>Chennai Morning Peak — 8:00 AM to 10:00 AM</p>
+            </div>
+        </div>
+        <div class="header-status" id="statusBadge">
+            <span class="status-dot idle"></span>
+            <span id="statusText">Ready</span>
+        </div>
+    </div>
+</header>
+
+<main class="app-body">
+
+    <!-- LEFT PANEL: CONTROLS -->
+    <aside class="panel panel-controls">
+        <div class="panel-title">Simulation Setup</div>
+
+        <!-- Location -->
+        <div class="form-group">
+            <label>Location</label>
+            <div class="location-cards" id="locationCards">
+                <div class="loc-card active" data-loc="1">
+                    <div class="loc-icon">🛣️</div>
+                    <div class="loc-name">Thiruvanmiyur</div>
+                    <div class="loc-meta">7 roads · 3 intersections</div>
+                </div>
+                <div class="loc-card" data-loc="2">
+                    <div class="loc-icon">🌉</div>
+                    <div class="loc-name">Adyar</div>
+                    <div class="loc-meta">9 roads · 3 intersections</div>
+                </div>
+                <div class="loc-card" data-loc="3">
+                    <div class="loc-icon">🏙️</div>
+                    <div class="loc-name">Velachery</div>
+                    <div class="loc-meta">10 roads · 3 intersections</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Count -->
+        <div class="form-group">
+            <label>
+                Vehicle Count
+                <span class="label-hint" id="vehicleHint">Default (location preset)</span>
+            </label>
+            <div class="vehicle-count-row">
+                <input
+                    type="range"
+                    id="vehicleSlider"
+                    min="0" max="100" value="0" step="5"
+                    oninput="onVehicleSlider()"
+                >
+                <input
+                    type="number"
+                    id="vehicleInput"
+                    class="vehicle-number-input"
+                    min="1" max="300" placeholder="Auto"
+                    oninput="onVehicleNumber()"
+                >
+            </div>
+        </div>
+
+        <!-- Time Steps -->
+        <div class="form-group">
+            <label>Time Steps <span class="label-hint" id="tsHint">15 steps (~30 min)</span></label>
+            <input type="range" id="timestepSlider" min="5" max="30" value="15" step="1">
+        </div>
+
+        <div class="form-divider"></div>
+
+        <button class="btn btn-primary" id="btnRun" onclick="runSimulation()">
+            ▶ Run Simulation
+        </button>
+        <button class="btn btn-outline" id="btnStep" onclick="startStepMode()" disabled>
+            ⏭ Step Mode
+        </button>
+        <button class="btn btn-ghost" onclick="resetAll()">
+            ↺ Reset
+        </button>
+
+        <!-- Step controls -->
+        <div class="step-controls" id="stepControls" style="display:none">
+            <div class="form-divider"></div>
+            <div class="step-info">
+                Step <span id="curStep">0</span> / <span id="maxStep">0</span>
+            </div>
+            <div class="step-buttons">
+                <button class="btn btn-sm" onclick="prevStep()">◀ Prev</button>
+                <button class="btn btn-sm btn-primary" onclick="nextStep()">Next ▶</button>
+            </div>
+            <button class="btn btn-sm btn-outline" id="btnPlay" onclick="autoPlay()">⏯ Auto Play</button>
+        </div>
+
+        <!-- Summary card -->
+        <div class="summary-card" id="summaryCard" style="display:none">
+            <div class="form-divider"></div>
+            <div class="panel-title">Quick Stats</div>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="sSummCompleted">—</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="sSummWait">—</div>
+                    <div class="stat-label">Avg Wait</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="sSummEmerg">—</div>
+                    <div class="stat-label">Emergency</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="sSummQueue">—</div>
+                    <div class="stat-label">Max Queue</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CENTRE: VISUALISATION -->
+    <section class="panel panel-visual">
+        <div class="panel-title">Live Traffic View</div>
+
+        <div class="loading-overlay" id="loadingOverlay" style="display:none">
+            <div class="spinner"></div>
+            <div class="loading-text">Running simulation…</div>
+        </div>
+
+        <div class="placeholder" id="visualPlaceholder">
+            <div class="placeholder-icon">🗺️</div>
+            <p>Select a location and click <strong>Run Simulation</strong></p>
+        </div>
+
+        <div id="roadMap" style="display:none">
+            <div class="step-label" id="stepLabel">Step 0 — 08:00 AM</div>
+            <div class="road-bars" id="roadBars"></div>
+            <div class="intersection-grid" id="intersectionGrid"></div>
+            <div class="event-log">
+                <div class="event-title">Events this step</div>
+                <div class="event-items" id="eventItems">—</div>
+            </div>
+
+            <!-- ── ROAD NETWORK — always visible, below event log ── -->
+            <div class="network-inline-card">
+                <div class="network-inline-header">
+                    <span class="network-inline-title">Road Network</span>
+                    <span class="map-step-badge-inline" id="mapStepBadge">—</span>
+                </div>
+                <div class="network-map-wrap" id="networkMapWrap">
+                    <canvas id="networkCanvas"></canvas>
+                    <div class="map-placeholder" id="mapPlaceholder">
+                        <div class="map-placeholder-icon">🕸️</div>
+                        <span>Run simulation to visualise the road network</span>
+                    </div>
+                </div>
+                <div class="map-legend">
+                    <span class="map-legend-title">Congestion</span>
+                    <div class="legend-item"><div class="legend-dot ld-low"></div>Low</div>
+                    <div class="legend-item"><div class="legend-dot ld-med"></div>Medium</div>
+                    <div class="legend-item"><div class="legend-dot ld-high"></div>High</div>
+                    <div class="legend-item"><div class="legend-dot ld-crit"></div>Critical</div>
+                    <div class="legend-item"><div class="legend-dot ld-node"></div>Intersection</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RIGHT PANEL: ANALYTICS -->
+    <aside class="panel panel-analytics">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('heatmap', this)">Heat Map</button>
+            <button class="tab" onclick="switchTab('roads', this)">Roads</button>
+            <button class="tab" onclick="switchTab('vehicles', this)">Vehicles</button>
+            <button class="tab" onclick="switchTab('report', this)">Report</button>
+        </div>
+
+        <div class="tab-content active" id="tab-heatmap">
+            <div class="heatmap-wrap" id="heatmapWrap">
+                <div class="no-data">No data yet — run the simulation first.</div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-roads">
+            <div id="roadStatsTable"><div class="no-data">No data yet.</div></div>
+        </div>
+
+        <div class="tab-content" id="tab-vehicles">
+            <div id="vehicleLogTable"><div class="no-data">No data yet.</div></div>
+        </div>
+
+        <div class="tab-content" id="tab-report">
+            <div id="finalReport"><div class="no-data">No data yet.</div></div>
+        </div>
+
+    </aside>
+
+</main>
+
+<footer class="app-footer">
+    Dynamic Traffic Flow &amp; Congestion Simulation System &nbsp;·&nbsp;
+    C Backend + Node.js Bridge + HTML/CSS/JS Frontend
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,699 @@
+/* ============================================================
+   styles.css — Traffic Simulation UI
+   Design: clean, dark-accented dashboard
+============================================================ */
+
+/* ---- Reset & Base ---- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --bg-page    : #0f1117;
+    --bg-panel   : #1a1d27;
+    --bg-card    : #222534;
+    --bg-hover   : #2a2e42;
+    --border     : #2e3248;
+    --text-pri   : #e8eaf2;
+    --text-sec   : #8b90a7;
+    --text-hint  : #5a5f78;
+    --accent     : #4f8ef7;
+    --accent-glow: rgba(79,142,247,0.18);
+    --green      : #2ecc71;
+    --red        : #e74c3c;
+    --yellow     : #f39c12;
+    --orange     : #e67e22;
+    --emerg      : #9b59b6;
+    --radius     : 10px;
+    --radius-sm  : 6px;
+    --shadow     : 0 4px 24px rgba(0,0,0,0.4);
+}
+
+html, body {
+    height: 100%;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    background: var(--bg-page);
+    color: var(--text-pri);
+    line-height: 1.5;
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+.app-header {
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.header-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.header-logo { display: flex; align-items: center; gap: 14px; }
+.logo-icon { font-size: 28px; line-height: 1; }
+.header-logo h1 { font-size: 17px; font-weight: 600; color: var(--text-pri); }
+.header-logo p  { font-size: 12px; color: var(--text-sec); margin-top: 1px; }
+
+.header-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text-sec);
+}
+.status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-hint);
+}
+.status-dot.idle    { background: var(--text-hint); }
+.status-dot.running { background: var(--yellow); animation: pulse 1s infinite; }
+.status-dot.done    { background: var(--green); }
+.status-dot.error   { background: var(--red); }
+
+@keyframes pulse {
+    0%,100% { opacity:1; } 50% { opacity:0.3; }
+}
+
+/* ============================================================
+   MAIN LAYOUT — 3 columns
+============================================================ */
+.app-body {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 280px 1fr 340px;
+    gap: 14px;
+    min-height: calc(100vh - 60px - 40px);
+}
+
+/* ============================================================
+   PANEL BASE
+============================================================ */
+.panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.panel-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-sec);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.form-divider {
+    border-top: 1px solid var(--border);
+    margin: 2px 0;
+}
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group label {
+    font-size: 12px; font-weight: 500;
+    color: var(--text-sec);
+    display: flex; align-items: center; justify-content: space-between;
+}
+.label-hint { color: var(--accent); font-weight: 600; }
+
+/* ============================================================
+   LOCATION CARDS
+============================================================ */
+.location-cards { display: flex; flex-direction: column; gap: 6px; }
+
+.loc-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.loc-card:hover { border-color: var(--accent); background: var(--bg-hover); }
+.loc-card.active { border-color: var(--accent); background: var(--accent-glow); }
+
+.loc-icon { font-size: 18px; }
+.loc-name { font-size: 13px; font-weight: 500; color: var(--text-pri); }
+.loc-meta { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+
+/* ============================================================
+   RANGE SLIDER
+============================================================ */
+input[type=range] {
+    -webkit-appearance: none;
+    width: 100%; height: 4px;
+    background: var(--border);
+    border-radius: 4px; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); cursor: pointer;
+}
+
+/* ============================================================
+   BUTTONS
+============================================================ */
+.btn {
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    border: none; cursor: pointer;
+    font-size: 13px; font-weight: 500;
+    transition: all 0.15s;
+    text-align: center;
+    width: 100%;
+}
+.btn-primary {
+    background: var(--accent); color: #fff;
+}
+.btn-primary:hover { background: #3a7ae0; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--text-pri);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-outline:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost {
+    background: transparent; color: var(--text-sec);
+    border: none;
+}
+.btn-ghost:hover { color: var(--text-pri); background: var(--bg-hover); }
+
+.btn-sm {
+    padding: 6px 12px; font-size: 12px; width: auto;
+}
+
+/* ============================================================
+   STEP CONTROLS
+============================================================ */
+.step-controls { display: flex; flex-direction: column; gap: 8px; }
+.step-info {
+    text-align: center; font-size: 12px; color: var(--text-sec);
+}
+.step-info span { color: var(--accent); font-weight: 600; }
+.step-buttons { display: flex; gap: 8px; }
+.step-buttons .btn { flex: 1; }
+
+/* ============================================================
+   SUMMARY CARD
+============================================================ */
+.summary-card { display: flex; flex-direction: column; gap: 10px; }
+.stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.stat-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px; text-align: center;
+}
+.stat-value { font-size: 20px; font-weight: 700; color: var(--accent); }
+.stat-label { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+
+/* ============================================================
+   CENTRE — VISUAL PANEL
+============================================================ */
+.panel-visual {
+    position: relative;
+    overflow: hidden;
+    /* FIX: ensure the panel itself stretches to fill grid row */
+    min-height: 0;
+}
+
+/* roadMap uses flex column so sections stack and event log gets real height */
+#roadMap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+    min-height: 0;
+}
+
+/* road-bars section: scrollable if many roads, but not grabbing all space */
+.road-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    max-height: 220px;
+    flex-shrink: 0;
+}
+
+/* intersection grid: fixed-ish height, wraps naturally */
+.intersection-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: absolute; inset: 0;
+    background: rgba(15,17,23,0.85);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px; z-index: 10;
+    border-radius: var(--radius);
+}
+.spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 13px; color: var(--text-sec); }
+
+/* Placeholder */
+.placeholder {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px; color: var(--text-hint);
+}
+.placeholder-icon { font-size: 48px; opacity: 0.4; }
+.placeholder p { font-size: 13px; text-align: center; }
+.placeholder strong { color: var(--text-sec); }
+
+/* Step label */
+.step-label {
+    font-size: 13px; font-weight: 600;
+    color: var(--accent); margin-bottom: 4px;
+}
+
+/* ============================================================
+   ROAD BARS  (layout defined in CENTRE section above)
+============================================================ */
+
+.road-bar-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 60px;
+    align-items: center; gap: 10px;
+}
+.road-bar-name {
+    font-size: 12px; color: var(--text-sec);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.road-bar-track {
+    height: 10px; background: var(--bg-card);
+    border-radius: 5px; overflow: hidden;
+    border: 1px solid var(--border);
+}
+.road-bar-fill {
+    height: 100%; border-radius: 5px;
+    transition: width 0.4s ease, background-color 0.4s ease;
+}
+.road-bar-pct {
+    font-size: 12px; font-weight: 600; text-align: right;
+    min-width: 40px;
+}
+
+/* Congestion colour scale */
+.cong-low    { background: var(--green); }
+.cong-med    { background: var(--yellow); }
+.cong-high   { background: var(--orange); }
+.cong-crit   { background: var(--red); }
+
+/* ============================================================
+   INTERSECTION SIGNALS  (grid layout defined in CENTRE section above)
+============================================================ */
+.inter-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    min-width: 180px; flex: 1;
+}
+.inter-name {
+    font-size: 11px; color: var(--text-hint);
+    margin-bottom: 6px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+}
+.inter-signal-row {
+    display: flex; align-items: center; gap: 8px;
+}
+.signal-lamp {
+    width: 12px; height: 12px; border-radius: 50%;
+    flex-shrink: 0;
+}
+.lamp-green  { background: var(--green);  box-shadow: 0 0 8px var(--green); }
+.lamp-red    { background: var(--red);    box-shadow: 0 0 8px var(--red);   }
+.lamp-yellow { background: var(--yellow); box-shadow: 0 0 8px var(--yellow);}
+
+.inter-road-label { font-size: 12px; font-weight: 500; color: var(--text-pri); }
+.inter-timer { font-size: 11px; color: var(--text-hint); margin-left: auto; }
+
+/* ============================================================
+   EVENT LOG  — Part 1 Fix: proper height, spacing, smooth scroll
+============================================================ */
+.event-log {
+    margin-top: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    /* FIX: use min-height + max-height so it grows but caps and scrolls */
+    min-height: 160px;
+    max-height: 260px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    /* FIX: flex column so title stays pinned and items fill remaining space */
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;   /* prevent parent flex from collapsing this */
+}
+.event-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-hint);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;   /* title never squishes */
+}
+.event-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0;           /* gaps handled by padding on each item */
+    overflow-y: auto;
+    flex: 1;
+}
+.event-item {
+    font-size: 13px;
+    color: var(--text-sec);
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(46,50,72,0.45);
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+}
+.event-item:last-child { border-bottom: none; }
+.event-item.ev-arrive  { color: var(--green); }
+.event-item.ev-emerg   { color: var(--emerg); font-weight: 600; }
+.event-item.ev-cong    { color: var(--orange); }
+.event-item.ev-spill   { color: var(--red); font-weight: 600; }
+.event-item.ev-move    { color: var(--text-sec); }
+
+/* ============================================================
+   TABS
+============================================================ */
+.tabs {
+    display: flex; gap: 4px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+}
+.tab {
+    padding: 5px 12px; font-size: 12px; font-weight: 500;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--text-hint); border-radius: var(--radius-sm);
+    transition: all 0.15s;
+}
+.tab:hover { color: var(--text-pri); background: var(--bg-hover); }
+.tab.active { background: var(--accent-glow); color: var(--accent); }
+
+.tab-content { display: none; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; }
+.tab-content.active { display: flex; }
+
+.no-data { color: var(--text-hint); font-size: 13px; text-align: center; padding: 20px 0; }
+
+/* ============================================================
+   HEAT MAP
+============================================================ */
+.heatmap-wrap { display: flex; flex-direction: column; gap: 6px; }
+
+.hm-row {
+    display: flex; align-items: center; gap: 8px;
+}
+.hm-label {
+    font-size: 11px; color: var(--text-sec);
+    width: 28px; flex-shrink: 0; text-align: right;
+}
+.hm-road-name {
+    font-size: 11px; color: var(--text-sec);
+    min-width: 140px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+}
+.hm-cell {
+    flex: 1; height: 22px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+    transition: background 0.3s;
+}
+
+/* ============================================================
+   ROAD STATS TABLE
+============================================================ */
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.stats-table th {
+    text-align: left; padding: 6px 8px;
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-hint);
+    border-bottom: 1px solid var(--border);
+}
+.stats-table td {
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-sec);
+    vertical-align: middle;
+}
+.stats-table tr:hover td { background: var(--bg-hover); }
+.stats-table .road-id { color: var(--accent); font-weight: 600; }
+.stats-table .road-name { color: var(--text-pri); max-width: 130px; }
+.mini-bar {
+    display: flex; align-items: center; gap: 5px;
+}
+.mini-bar-track {
+    flex: 1; height: 6px; background: var(--bg-page);
+    border-radius: 3px; overflow: hidden;
+}
+.mini-bar-fill { height: 100%; border-radius: 3px; }
+
+/* ============================================================
+   VEHICLE LOG
+============================================================ */
+.veh-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+}
+.veh-table th {
+    text-align: left; padding: 5px 6px;
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-hint);
+    border-bottom: 1px solid var(--border);
+}
+.veh-table td {
+    padding: 5px 6px;
+    border-bottom: 1px solid rgba(46,50,72,0.5);
+    color: var(--text-sec);
+}
+.veh-table tr:hover td { background: var(--bg-hover); }
+
+.badge {
+    display: inline-block; padding: 1px 6px;
+    border-radius: 10px; font-size: 10px; font-weight: 600;
+}
+.badge-done    { background: rgba(46,204,113,0.15); color: var(--green); }
+.badge-active  { background: rgba(79,142,247,0.15); color: var(--accent); }
+.badge-wait    { background: rgba(231,76,60,0.15);  color: var(--red); }
+.badge-emerg   { background: rgba(155,89,182,0.15); color: var(--emerg); }
+.badge-normal  { background: rgba(139,144,167,0.1); color: var(--text-sec); }
+
+/* ============================================================
+   FINAL REPORT
+============================================================ */
+.report-section { display: flex; flex-direction: column; gap: 6px; }
+.report-heading {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--text-hint);
+    border-bottom: 1px solid var(--border); padding-bottom: 4px;
+}
+.report-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0;
+}
+.report-key   { font-size: 12px; color: var(--text-sec); }
+.report-val   { font-size: 13px; font-weight: 600; color: var(--text-pri); }
+.report-val.good  { color: var(--green); }
+.report-val.warn  { color: var(--yellow); }
+.report-val.crit  { color: var(--red); }
+
+/* ============================================================
+   SCROLLBARS
+============================================================ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-page); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-hint); }
+
+/* ============================================================
+   ROAD NETWORK — inline card below event log
+============================================================ */
+
+/* Outer card — matches the dark card style used elsewhere */
+.network-inline-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px 14px;
+    flex-shrink: 0;   /* never get squished by parent flex */
+}
+
+/* Header row: title left, step badge right */
+.network-inline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.network-inline-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-sec);
+}
+.map-step-badge-inline {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(79,142,247,0.3);
+    border-radius: 20px;
+    padding: 2px 10px;
+    letter-spacing: 0.02em;
+}
+
+/* Canvas wrapper — fixed height so map is dominant, scales in width */
+.network-map-wrap {
+    position: relative;
+    width: 100%;
+    height: 290px;          /* visually dominant without overwhelming */
+    background: #090c12;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+#networkCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Placeholder shown before simulation runs */
+.map-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text-hint);
+    font-size: 13px;
+    background: #090c12;
+    pointer-events: none;
+}
+.map-placeholder-icon { font-size: 38px; opacity: 0.25; }
+
+/* Legend strip — compact, 2-row wrap on narrow containers */
+.map-legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.map-legend-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-hint);
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-sec);
+}
+.legend-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.legend-dot.ld-low  { background: #2ecc71; }
+.legend-dot.ld-med  { background: #f39c12; }
+.legend-dot.ld-high { background: #e67e22; }
+.legend-dot.ld-crit { background: #e74c3c; }
+.legend-dot.ld-node { background: #4f8ef7; border-radius: 2px; }
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.app-footer {
+    text-align: center; padding: 12px;
+    font-size: 11px; color: var(--text-hint);
+    border-top: 1px solid var(--border);
+}
+
+/* ============================================================
+   RESPONSIVE — collapse to 2 columns on smaller screens
+============================================================ */
+@media (max-width: 1100px) {
+    .app-body {
+        grid-template-columns: 260px 1fr;
+    }
+    .panel-analytics {
+        grid-column: 1 / -1;
+    }
+}
+@media (max-width: 700px) {
+    .app-body {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---- Vehicle count row (new control) ---- */
+.vehicle-count-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.vehicle-count-row input[type="range"] {
+    flex: 1;
+}
+.vehicle-number-input {
+    width: 68px;
+    padding: 5px 8px;
+    background: var(--bg-input, #1e2433);
+    border: 1px solid var(--border, #2d3448);
+    border-radius: 6px;
+    color: var(--text-primary, #e2e8f0);
+    font-size: 13px;
+    text-align: center;
+}
+.vehicle-number-input::placeholder {
+    color: var(--text-hint, #64748b);
+    font-size: 11px;
+}
+.vehicle-number-input:focus {
+    outline: none;
+    border-color: var(--accent, #3b82f6);
+}
