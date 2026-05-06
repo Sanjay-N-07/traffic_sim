@@ -501,22 +501,22 @@ const NETWORK_LAYOUTS = {
             { id:'I2', label:'I3\nBus Stand',   x:0.78, y:0.72 },
         ],
         edges: [
-            /* R1  ext(top) → I1  ↓ */
-            { rid:1, label:'R1', x1:0.42, y1:0.08, x2:0.42, y2:0.35, offset:-5, labelSide:-1 },
-            /* R2  I1 → I3  ↘ (left diagonal) */
-            { rid:2, label:'R2', x1:0.47, y1:0.35, x2:0.78, y2:0.72, offset:-5, labelSide:-1 },
-            /* R3  ext(left) → I1  → */
-            { rid:3, label:'R3', x1:0.08, y1:0.31, x2:0.47, y2:0.31, offset:-5, labelSide:-1 },
-            /* R4  I2 → I1  ↗ */
-            { rid:4, label:'R4', x1:0.18, y1:0.72, x2:0.47, y2:0.35, offset: 5, labelSide: 1 },
-            /* R5  I1 → I3  ↘ (right diagonal, parallel to R2) */
-            { rid:5, label:'R5', x1:0.47, y1:0.35, x2:0.78, y2:0.72, offset: 7, labelSide: 1 },
-            /* R6  ext(bottom-right) → I3  ↖ */
-            { rid:6, label:'R6', x1:0.94, y1:0.86, x2:0.78, y2:0.72, offset:-5, labelSide:-1 },
-            /* R7  ext(bottom) → I2  ↑ */
-            { rid:7, label:'R7', x1:0.18, y1:0.92, x2:0.18, y2:0.72, offset:-5, labelSide:-1 },
-            /* R8  I2 → I3  → (new horizontal direct link) */
-            { rid:8, label:'R8', x1:0.18, y1:0.72, x2:0.78, y2:0.72, offset:-6, labelSide:-1 },
+            /* R1  ext(top) → I1=(0.47,0.35)  ↓  endpoint pinned to I1 */
+            { rid:1, label:'R1', x1:0.47, y1:0.08, x2:0.47, y2:0.35, offset:-7, labelSide:-1 },
+            /* R2  I1=(0.47,0.35) → I3=(0.78,0.72)  ↘ UPPER diagonal — starts upper-left of I1 */
+            { rid:2, label:'R2', x1:0.75, y1:0.69, x2:0.44, y2:0.32, offset:14, labelSide:1 },
+            /* R3  ext(left) → I1=(0.47,0.35)  →  endpoint pinned */
+            { rid:3, label:'R3', x1:0.08, y1:0.35, x2:0.47, y2:0.35, offset:-6, labelSide:-1 },
+            /* R4  I2=(0.18,0.72) → I1=(0.47,0.35)  ↗  both pinned */
+            { rid:4, label:'R4', x1:0.18, y1:0.72, x2:0.47, y2:0.35, offset: 6, labelSide: 1 },
+            /* R5  I1=(0.47,0.35) → I3=(0.78,0.72)  ↘ LOWER diagonal — starts lower-right of I1 */
+            { rid:5, label:'R5', x1:0.50, y1:0.38, x2:0.81, y2:0.75, offset: 14, labelSide: 1 },
+            /* R6  ext(bottom-right) → I3=(0.78,0.72)  ↖  endpoint pinned */
+            { rid:6, label:'R6', x1:0.94, y1:0.88, x2:0.78, y2:0.72, offset:-5, labelSide:-1 },
+            /* R7  ext(bottom) → I2=(0.18,0.72)  ↑  endpoint pinned */
+            { rid:7, label:'R7', x1:0.18, y1:0.94, x2:0.18, y2:0.72, offset:-6, labelSide:-1 },
+            /* R8  I2=(0.18,0.72) → I3=(0.78,0.72)  →  both pinned */
+            { rid:8, label:'R8', x1:0.18, y1:0.72, x2:0.78, y2:0.72, offset:-7, labelSide:-1 },
         ],
     },
 
@@ -539,24 +539,24 @@ const NETWORK_LAYOUTS = {
             { id:'I2', label:'I3\nBus Stand',  x:0.38, y:0.76 },
         ],
         edges: [
-            /* R1  ext(top) → I1  ↓ */
-            { rid:1, label:'R1', x1:0.33, y1:0.08, x2:0.33, y2:0.44, offset:-5, labelSide:-1 },
-            /* R2  I1 → I2  ↗ (Adyar Main to Depot) */
-            { rid:2, label:'R2', x1:0.38, y1:0.40, x2:0.76, y2:0.28, offset:-5, labelSide:-1 },
-            /* R3  ext(left) → I1  → */
-            { rid:3, label:'R3', x1:0.08, y1:0.48, x2:0.38, y2:0.48, offset: 5, labelSide: 1 },
-            /* R4  ext(upper-left) → I1  ↘ */
-            { rid:4, label:'R4', x1:0.10, y1:0.22, x2:0.38, y2:0.44, offset:-5, labelSide:-1 },
-            /* R5  I1 → I3  ↓ */
-            { rid:5, label:'R5', x1:0.43, y1:0.44, x2:0.43, y2:0.76, offset: 5, labelSide: 1 },
-            /* R6  ext(upper-right) → I2  ↙ */
-            { rid:6, label:'R6', x1:0.94, y1:0.12, x2:0.76, y2:0.28, offset:-5, labelSide:-1 },
-            /* R7  ext(right) → I2  ↙ (angled toward depot) */
-            { rid:7, label:'R7', x1:0.94, y1:0.40, x2:0.76, y2:0.28, offset: 6, labelSide: 1 },
-            /* R8  ext(lower-left) → I3  ↗ */
-            { rid:8, label:'R8', x1:0.08, y1:0.88, x2:0.38, y2:0.76, offset:-5, labelSide:-1 },
-            /* R9  I3 → ext(bottom)  ↓ */
-            { rid:9, label:'R9', x1:0.38, y1:0.76, x2:0.38, y2:0.94, offset: 5, labelSide: 1 },
+            /* R1  ext(top) → I1=(0.38,0.44)  ↓  endpoint pinned to I1 */
+            { rid:1, label:'R1', x1:0.38, y1:0.08, x2:0.38, y2:0.44, offset:-7, labelSide:-1 },
+            /* R2  I1=(0.38,0.44) → I2=(0.76,0.28)  ↗  both pinned */
+            { rid:2, label:'R2', x1:0.38, y1:0.44, x2:0.76, y2:0.28, offset:-6, labelSide:-1 },
+            /* R3  ext(left) → I1=(0.38,0.44)  →  endpoint pinned */
+            { rid:3, label:'R3', x1:0.08, y1:0.44, x2:0.38, y2:0.44, offset:-6, labelSide:-1 },
+            /* R4  ext(upper-left) → I1=(0.38,0.44)  ↘  endpoint pinned */
+            { rid:4, label:'R4', x1:0.10, y1:0.22, x2:0.38, y2:0.44, offset:-6, labelSide:-1 },
+            /* R5  I1=(0.38,0.44) → I3=(0.38,0.76)  ↓  both pinned */
+            { rid:5, label:'R5', x1:0.38, y1:0.44, x2:0.38, y2:0.76, offset: 7, labelSide: 1 },
+            /* R6  I2=(0.76,0.28) → ext(upper-right)  ↗  arrow reversed to correct direction */
+            { rid:6, label:'R6', x1:0.76, y1:0.28, x2:0.94, y2:0.12, offset:-5, labelSide:-1 },
+            /* R7  ext(right) → I2=(0.76,0.28)  ↙  endpoint pinned */
+            { rid:7, label:'R7', x1:0.94, y1:0.42, x2:0.76, y2:0.28, offset: 7, labelSide: 1 },
+            /* R8  ext(lower-left) → I3=(0.38,0.76)  ↗  endpoint pinned */
+            { rid:8, label:'R8', x1:0.08, y1:0.90, x2:0.38, y2:0.76, offset:-5, labelSide:-1 },
+            /* R9  I3=(0.38,0.76) → ext(bottom)  ↓  start pinned */
+            { rid:9, label:'R9', x1:0.38, y1:0.76, x2:0.38, y2:0.94, offset: 6, labelSide: 1 },
         ],
     },
 
@@ -579,26 +579,26 @@ const NETWORK_LAYOUTS = {
             { id:'I2', label:'I3\nSouth Jn',     x:0.78, y:0.64 },
         ],
         edges: [
-            /* R1   ext(top) → I1  ↓  (left of centre) */
-            { rid: 1, label:'R1',  x1:0.40, y1:0.08, x2:0.40, y2:0.30, offset:-5, labelSide:-1 },
-            /* R2   I1 → I2  ↓  (left column) */
-            { rid: 2, label:'R2',  x1:0.40, y1:0.30, x2:0.40, y2:0.64, offset:-6, labelSide:-1 },
-            /* R3   ext(left) → I1  → */
-            { rid: 3, label:'R3',  x1:0.08, y1:0.26, x2:0.45, y2:0.26, offset:-5, labelSide:-1 },
-            /* R4   ext(upper-right) → I1  ↙ */
+            /* R1   ext(top) → I1=(0.45,0.30)  ↓  endpoint pinned to I1 */
+            { rid: 1, label:'R1',  x1:0.45, y1:0.08, x2:0.45, y2:0.30, offset:-8, labelSide:-1 },
+            /* R2   I1=(0.45,0.30) → I2=(0.45,0.64)  ↓  both pinned, left arc */
+            { rid: 2, label:'R2',  x1:0.45, y1:0.64, x2:0.45, y2:0.30, offset:8, labelSide:1 },
+            /* R3   ext(left) → I1=(0.45,0.30)  →  endpoint pinned */
+            { rid: 3, label:'R3',  x1:0.08, y1:0.30, x2:0.45, y2:0.30, offset:-6, labelSide:-1 },
+            /* R4   ext(upper-right) → I1=(0.45,0.30)  ↙  endpoint pinned */
             { rid: 4, label:'R4',  x1:0.88, y1:0.10, x2:0.45, y2:0.30, offset:-5, labelSide:-1 },
-            /* R5   I1 → I2  ↓  (right column, parallel to R2) */
-            { rid: 5, label:'R5',  x1:0.50, y1:0.30, x2:0.50, y2:0.64, offset: 6, labelSide: 1 },
-            /* R6   ext(left) → I2  → */
-            { rid: 6, label:'R6',  x1:0.08, y1:0.68, x2:0.45, y2:0.68, offset: 5, labelSide: 1 },
-            /* R7   I2 → I3  → */
-            { rid: 7, label:'R7',  x1:0.45, y1:0.64, x2:0.78, y2:0.64, offset:-5, labelSide:-1 },
-            /* R8   ext(lower-right) → I3  ↖ */
+            /* R5   I1=(0.45,0.30) → I2=(0.45,0.64)  ↓  both pinned, right arc */
+            { rid: 5, label:'R5',  x1:0.45, y1:0.30, x2:0.45, y2:0.64, offset: 8, labelSide: 1 },
+            /* R6   ext(left) → I2=(0.45,0.64)  →  endpoint pinned */
+            { rid: 6, label:'R6',  x1:0.08, y1:0.64, x2:0.45, y2:0.64, offset: 6, labelSide: 1 },
+            /* R7   I2=(0.45,0.64) → I3=(0.78,0.64)  →  both pinned */
+            { rid: 7, label:'R7',  x1:0.45, y1:0.64, x2:0.78, y2:0.64, offset:-6, labelSide:-1 },
+            /* R8   ext(lower-right) → I3=(0.78,0.64)  ↖  endpoint pinned */
             { rid: 8, label:'R8',  x1:0.84, y1:0.90, x2:0.78, y2:0.64, offset: 5, labelSide: 1 },
-            /* R9   ext(bottom-centre) → I3  ↗ */
+            /* R9   ext(bottom-centre) → I3=(0.78,0.64)  ↗  endpoint pinned */
             { rid: 9, label:'R9',  x1:0.62, y1:0.90, x2:0.78, y2:0.64, offset:-5, labelSide:-1 },
-            /* R10  I2 → ext(bottom)  ↓ */
-            { rid:10, label:'R10', x1:0.45, y1:0.64, x2:0.45, y2:0.92, offset: 6, labelSide: 1 },
+            /* R10  I2=(0.45,0.64) → ext(bottom)  ↓  start pinned */
+            { rid:10, label:'R10', x1:0.45, y1:0.64, x2:0.45, y2:0.92, offset: 7, labelSide: 1 },
         ],
     },
 };
@@ -621,15 +621,21 @@ function congRoadColor(pct) {
    of the direction vector (x1,y1 → x2,y2).
 ================================================================ */
 function applyOffset(sx1, sy1, sx2, sy2, offsetPx) {
-    if (offsetPx === 0) return { ax1: sx1, ay1: sy1, ax2: sx2, ay2: sy2 };
+    /*
+     * FIX: endpoints stay pinned to their node positions.
+     * Only the midpoint control is shifted perpendicularly.
+     * Roads are drawn as quadratic Bézier curves so parallel
+     * roads separate visually while still meeting at the same node.
+     */
     const dx  = sx2 - sx1;
     const dy  = sy2 - sy1;
     const len = Math.hypot(dx, dy) || 1;
-    /* Perpendicular unit vector (rotated 90° left = [-dy, dx] / len) */
     const px  = (-dy / len) * offsetPx;
     const py  = ( dx / len) * offsetPx;
-    return { ax1: sx1 + px, ay1: sy1 + py,
-             ax2: sx2 + px, ay2: sy2 + py };
+    /* Control point = midpoint + perpendicular shift */
+    const cx  = (sx1 + sx2) / 2 + px;
+    const cy  = (sy1 + sy2) / 2 + py;
+    return { ax1: sx1, ay1: sy1, ax2: sx2, ay2: sy2, cx, cy };
 }
 
 /* ================================================================
@@ -637,14 +643,24 @@ function applyOffset(sx1, sy1, sx2, sy2, offsetPx) {
    The chevron is two lines forming a ">" shape aligned with the
    road direction.  Drawn in the road's colour with full opacity.
 ================================================================ */
-function drawChevron(ctx, ax1, ay1, ax2, ay2, t, color, size) {
-    /* Point on line at parameter t */
-    const cx = ax1 + (ax2 - ax1) * t;
-    const cy = ay1 + (ay2 - ay1) * t;
-
-    const dx    = ax2 - ax1;
-    const dy    = ay2 - ay1;
-    const len   = Math.hypot(dx, dy) || 1;
+function drawChevron(ctx, ax1, ay1, ax2, ay2, t, color, size, bcx, bcy) {
+    /* Point on Bézier (or straight line) at parameter t */
+    let cx, cy, dx, dy;
+    if (bcx !== undefined) {
+        /* Quadratic Bézier point: B(t) = (1-t)²P0 + 2t(1-t)Pc + t²P1 */
+        const mt = 1 - t;
+        cx = mt*mt*ax1 + 2*mt*t*bcx + t*t*ax2;
+        cy = mt*mt*ay1 + 2*mt*t*bcy + t*t*ay2;
+        /* Tangent: B'(t) = 2(1-t)(Pc-P0) + 2t(P1-Pc) */
+        dx = 2*(1-t)*(bcx-ax1) + 2*t*(ax2-bcx);
+        dy = 2*(1-t)*(bcy-ay1) + 2*t*(ay2-bcy);
+    } else {
+        cx = ax1 + (ax2 - ax1) * t;
+        cy = ay1 + (ay2 - ay1) * t;
+        dx = ax2 - ax1;
+        dy = ay2 - ay1;
+    }
+    const len   = Math.hypot(dx, dy) || 1;  /* tangent length */
     const ux    = dx / len;   /* unit vector along road */
     const uy    = dy / len;
     /* Perpendicular unit vector */
@@ -683,14 +699,19 @@ function drawChevron(ctx, ax1, ay1, ax2, ay2, t, color, size) {
    shifted a fixed distance perpendicular to the road on the
    requested side.  This guarantees the pill never sits on the line.
 ================================================================ */
-function drawRoadLabel(ctx, ax1, ay1, ax2, ay2, label, pct, color, labelSide, hasData) {
-    /* Midpoint of offset line */
-    const t  = 0.50;
-    const mx = ax1 + (ax2 - ax1) * t;
-    const my = ay1 + (ay2 - ay1) * t;
-
-    const dx  = ax2 - ax1;
-    const dy  = ay2 - ay1;
+function drawRoadLabel(ctx, ax1, ay1, ax2, ay2, label, pct, color, labelSide, hasData, bcx, bcy) {
+    /* Midpoint on Bézier (or straight line) at t=0.5 */
+    let mx, my, dx, dy;
+    if (bcx !== undefined) {
+        mx = 0.25*ax1 + 0.5*bcx + 0.25*ax2;
+        my = 0.25*ay1 + 0.5*bcy + 0.25*ay2;
+        dx = ax2 - ax1; dy = ay2 - ay1;   /* approx tangent at midpoint */
+    } else {
+        mx = (ax1 + ax2) / 2;
+        my = (ay1 + ay2) / 2;
+        dx = ax2 - ax1;
+        dy = ay2 - ay1;
+    }
     const len = Math.hypot(dx, dy) || 1;
     /* Perpendicular direction — pick side */
     const side = labelSide === 0 ? 1 : labelSide;
@@ -807,8 +828,8 @@ function drawNetworkMap(stepIdx) {
         const pct = roadCongest[e.rid] ?? 0;
         if (!hasData || pct < 50) return;
         const color = congRoadColor(pct);
-        const { ax1, ay1, ax2, ay2 } = applyOffset(
-            sx(e.x1), sy(e.y1), sx(e.x2), sy(e.y2), e.offset ?? 0);
+        const r = applyOffset(sx(e.x1), sy(e.y1), sx(e.x2), sy(e.y2), e.offset ?? 0);
+        const { ax1, ay1, ax2, ay2 } = r;
 
         ctx.save();
         ctx.shadowColor  = color;
@@ -819,7 +840,8 @@ function drawNetworkMap(stepIdx) {
         ctx.lineCap      = 'round';
         ctx.beginPath();
         ctx.moveTo(ax1, ay1);
-        ctx.lineTo(ax2, ay2);
+        if (r.cx !== undefined) ctx.quadraticCurveTo(r.cx, r.cy, ax2, ay2);
+        else ctx.lineTo(ax2, ay2);
         ctx.stroke();
         ctx.restore();
     });
@@ -832,10 +854,10 @@ function drawNetworkMap(stepIdx) {
         const pct   = roadCongest[e.rid] ?? 0;
         const color = hasData ? congRoadColor(pct) : '#2c3255';
 
-        const { ax1, ay1, ax2, ay2 } = applyOffset(
-            sx(e.x1), sy(e.y1), sx(e.x2), sy(e.y2), e.offset ?? 0);
+        const r = applyOffset(sx(e.x1), sy(e.y1), sx(e.x2), sy(e.y2), e.offset ?? 0);
+        const { ax1, ay1, ax2, ay2 } = r;
 
-        /* -- Road line -- */
+        /* -- Road line (Bézier keeps endpoints pinned to nodes) -- */
         ctx.save();
         ctx.strokeStyle = color;
         ctx.lineWidth   = hasData ? 3.5 : 2.5;
@@ -843,7 +865,8 @@ function drawNetworkMap(stepIdx) {
         ctx.globalAlpha = hasData ? 1 : 0.45;
         ctx.beginPath();
         ctx.moveTo(ax1, ay1);
-        ctx.lineTo(ax2, ay2);
+        if (r.cx !== undefined) ctx.quadraticCurveTo(r.cx, r.cy, ax2, ay2);
+        else ctx.lineTo(ax2, ay2);
         ctx.stroke();
         ctx.restore();
 
@@ -866,16 +889,16 @@ function drawNetworkMap(stepIdx) {
         const pct   = roadCongest[e.rid] ?? 0;
         const color = hasData ? congRoadColor(pct) : '#3a4070';
 
-        const { ax1, ay1, ax2, ay2 } = applyOffset(
-            sx(e.x1), sy(e.y1), sx(e.x2), sy(e.y2), e.offset ?? 0);
+        const r = applyOffset(sx(e.x1), sy(e.y1), sx(e.x2), sy(e.y2), e.offset ?? 0);
+        const { ax1, ay1, ax2, ay2 } = r;
 
         /* Use a slightly larger chevron on longer roads */
         const roadLen = Math.hypot(ax2 - ax1, ay2 - ay1);
         const chevSz  = Math.min(9, Math.max(6, roadLen * 0.07));
 
-        /* Two chevrons spaced along the road */
-        drawChevron(ctx, ax1, ay1, ax2, ay2, 0.33, color, chevSz);
-        drawChevron(ctx, ax1, ay1, ax2, ay2, 0.67, color, chevSz);
+        /* Two chevrons spaced along the road (Bézier-aware) */
+        drawChevron(ctx, ax1, ay1, ax2, ay2, 0.33, color, chevSz, r.cx, r.cy);
+        drawChevron(ctx, ax1, ay1, ax2, ay2, 0.67, color, chevSz, r.cx, r.cy);
     });
 
     /* ================================================================
@@ -886,12 +909,12 @@ function drawNetworkMap(stepIdx) {
         const pct   = roadCongest[e.rid] ?? 0;
         const color = hasData ? congRoadColor(pct) : '#4a5080';
 
-        const { ax1, ay1, ax2, ay2 } = applyOffset(
-            sx(e.x1), sy(e.y1), sx(e.x2), sy(e.y2), e.offset ?? 0);
+        const r = applyOffset(sx(e.x1), sy(e.y1), sx(e.x2), sy(e.y2), e.offset ?? 0);
+        const { ax1, ay1, ax2, ay2 } = r;
 
         drawRoadLabel(ctx, ax1, ay1, ax2, ay2,
                       e.label, pct, color,
-                      e.labelSide ?? 1, hasData);
+                      e.labelSide ?? 1, hasData, r.cx, r.cy);
     });
 
     /* ================================================================
