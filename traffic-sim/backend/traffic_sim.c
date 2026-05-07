@@ -184,249 +184,292 @@ static void setVeh(SimCtx *s, int i, int id, int et, int src, int dst, int spd, 
  */
 static void initThiruvanmiyur(SimCtx *s) {
     /*
-     * FIXED TOPOLOGY (8 roads, 3 intersections):
-     *   R2: I3->I1  (was I1->I3)
-     *   R6: I3->OUT (was ext->I3)
+     * FINAL Topology (8 roads, 3 intersections):
      *
-     *   [ext]--R1--> I1 <--R2-- I3 --R6--> [ext]
-     *   [ext]--R3--> I1          ^
-     *                I1 --R5-->  I3
-     *                ^           ^
-     *   I2  --R4--> I1  I2--R8->I3
-     *   ^
-     *   [ext]--R7-> I2
+     *   R1 : I1  → OUT  (OMR Northbound EXIT from Main Signal)  ← CHANGED
+     *   R2 : I3  → I1   (Bus Stand → Main Signal return arc)
+     *   R3 : OUT → I1   (Lattice Bridge Rd, enters Main Signal)
+     *   R4 : I2  → I1   (RGS Merge → Main Signal)
+     *   R5 : I1  → I3   (Main Signal → Bus Stand)
+     *   R6 : I3  → OUT  (Bus Stand exit to ECR)
+     *   R7 : OUT → I2   (Karpagam Ave → RGS Merge)
+     *   R8 : I2  → I3   (RGS Merge → Bus Stand direct)
      *
-     *   I1 (Main Signal) : in=[R1,R3,R4,R2]  out=[R5]
-     *   I2 (RGS Merge)   : in=[R7]            out=[R4,R8]
-     *   I3 (Bus Stand)   : in=[R5,R8]         out=[R2,R6]
+     *   I1 (Main Signal) : in=[R2,R3,R4]      out=[R1,R5]   ← R1 now an EXIT
+     *   I2 (RGS Merge)   : in=[R7]             out=[R4,R8]
+     *   I3 (Bus Stand)   : in=[R5,R8]          out=[R2,R6]
+     *
+     * Valid paths:
+     *   R3 → R1              R4 → R1            R2 → R1
+     *   R7 → R4 → R1        R3 → R5 → R6
+     *   R7 → R8 → R6        R2 → R5 → R6
+     *
+     * idx  name                                        cap spd thr  in   out
      */
     strncpy(s->location_name, "Thiruvanmiyur Signal, Chennai", 127);
     s->num_roads = 8;
-    /*           idx  name                               cap spd thr  in  out */
-    setRoad(s,0,"OMR Northbound (ext->I1)",               8, 25, 5,  -1,  0);
-    setRoad(s,1,"OMR Southbound (I3->I1)",                6, 30, 4,   2,  0); /* CHANGED */
-    setRoad(s,2,"Lattice Bridge Road (ext->I1)",          5, 20, 3,  -1,  0);
-    setRoad(s,3,"RGS Slip (I2->I1)",                      5, 20, 3,   1,  0);
-    setRoad(s,4,"Thiruvanmiyur Main Road (I1->I3)",       6, 25, 4,   0,  2);
-    setRoad(s,5,"East Coast Road (I3->OUT)",              5, 30, 3,   2, -1); /* CHANGED */
-    setRoad(s,6,"Karpagam Avenue (ext->I2)",              4, 20, 2,  -1,  1);
-    setRoad(s,7,"RGS Merge->Bus Stand direct (I2->I3)",   4, 20, 2,   1,  2);
+    setRoad(s,0,"OMR Northbound exit (I1 \xe2\x86\x92 OUT)",           8, 25, 5,   0, -1); /* R1 EXIT */
+    setRoad(s,1,"Bus Stand Return (I3 \xe2\x86\x92 Main Signal)",      5, 20, 3,   2,  0); /* R2 */
+    setRoad(s,2,"Lattice Bridge Rd (OUT \xe2\x86\x92 Main Signal)",    5, 20, 3,  -1,  0); /* R3 */
+    setRoad(s,3,"RGS Salai slip (I2 \xe2\x86\x92 Main Signal)",        5, 20, 3,   1,  0); /* R4 */
+    setRoad(s,4,"OMR Southbound (Main Signal \xe2\x86\x92 Bus Stand)", 6, 30, 4,   0,  2); /* R5 */
+    setRoad(s,5,"ECR exit (Bus Stand \xe2\x86\x92 OUT)",               5, 30, 3,   2, -1); /* R6 */
+    setRoad(s,6,"Karpagam Ave (OUT \xe2\x86\x92 RGS Merge)",           4, 20, 2,  -1,  1); /* R7 */
+    setRoad(s,7,"RGS Merge \xe2\x86\x92 Bus Stand (I2 \xe2\x86\x92 I3)",4,20, 2,   1,  2); /* R8 */
 
     s->num_intersections = 3;
 
-    /* I1 (Main Signal): in=[R1,R3,R4,R2]  out=[R5] */
+    /* I1 = idx 0 : Main Signal — R1 is now an outgoing exit road */
     setInter(s,0,"Thiruvanmiyur Main Signal", 9);
-    addIn(s,0,0); addIn(s,0,2); addIn(s,0,3); addIn(s,0,1);
-    addOut(s,0,4);
+    addIn(s,0,1); addIn(s,0,2); addIn(s,0,3);  /* R2, R3, R4 arrive  */
+    addOut(s,0,0); addOut(s,0,4);               /* R1(exit), R5(→I3)  */
 
-    /* I2 (RGS Merge): in=[R7]  out=[R4,R8] */
+    /* I2 = idx 1 : RGS Merge */
     setInter(s,1,"Rajiv Gandhi Salai Merge", 6);
-    addIn(s,1,6);
-    addOut(s,1,3); addOut(s,1,7);
+    addIn(s,1,6);                               /* R7          */
+    addOut(s,1,3); addOut(s,1,7);               /* R4, R8      */
 
-    /* I3 (Bus Stand): in=[R5,R8]  out=[R2,R6] */
+    /* I3 = idx 2 : Bus Stand */
     setInter(s,2,"Thiruvanmiyur Bus Stand Junction", 5);
-    addIn(s,2,4); addIn(s,2,7);
-    addOut(s,2,1); addOut(s,2,5);
+    addIn(s,2,4); addIn(s,2,7);                 /* R5, R8      */
+    addOut(s,2,1); addOut(s,2,5);               /* R2, R6      */
 
-    s->num_vehicles = 28; s->total_time_steps = 20;
-    /* All vehicles exit via R6(idx5)=I3->OUT.
-     * Src roads: R1(0)=ext->I1, R3(2)=ext->I1, R7(6)=ext->I2
-     * Path R1/R3: ->I1->R5->I3->R6->exit
-     * Path R7:    ->I2 -> R4->I1->R5->I3->R6->exit (or ->R8->I3->R6->exit) */
-    setVeh(s, 0, 0, 0,0,5,25,NORMAL);    /* R1->R6(exit via I3) */
-    setVeh(s, 1, 1, 0,0,5,25,NORMAL);
-    setVeh(s, 2, 2, 0,0,5,20,NORMAL);
-    setVeh(s, 3, 3, 1,0,5,25,NORMAL);
-    setVeh(s, 4, 4, 1,0,5,20,NORMAL);
-    setVeh(s, 5, 5, 2,0,5,25,NORMAL);
-    setVeh(s, 6, 6, 2,2,5,20,NORMAL);    /* R3->R6              */
-    setVeh(s, 7, 7, 3,6,5,20,NORMAL);    /* R7->R6(via I2->I1)  */
-    setVeh(s, 8, 8, 5,6,5,20,NORMAL);
-    setVeh(s, 9, 9, 2,0,5,40,EMERGENCY); /* R1->R6 emerg        */
-    setVeh(s,10,10, 3,0,5,25,NORMAL);
-    setVeh(s,11,11, 3,2,5,20,NORMAL);    /* R3->R6              */
-    setVeh(s,12,12, 4,2,5,20,NORMAL);
-    setVeh(s,13,13, 4,2,5,20,NORMAL);
-    setVeh(s,14,14, 5,6,5,40,EMERGENCY); /* R7->R6 emerg        */
-    setVeh(s,15,15, 5,0,5,25,NORMAL);
-    setVeh(s,16,16, 6,0,5,25,NORMAL);
-    setVeh(s,17,17, 7,0,5,20,NORMAL);
-    setVeh(s,18,18, 8,0,5,25,NORMAL);
-    setVeh(s,19,19, 9,2,5,20,NORMAL);
-    setVeh(s,20,20, 6,6,5,25,NORMAL);    /* R7->R6(via I2)      */
-    setVeh(s,21,21, 7,6,5,25,NORMAL);
-    setVeh(s,22,22, 8,6,5,30,NORMAL);
-    setVeh(s,23,23, 3,6,5,20,NORMAL);
-    setVeh(s,24,24, 5,6,5,20,NORMAL);
-    setVeh(s,25,25, 2,6,5,20,NORMAL);
-    setVeh(s,26,26, 4,6,5,20,NORMAL);
-    setVeh(s,27,27, 6,6,5,20,NORMAL);
+    /*
+     * Vehicles  (src/dst = 0-based road indices)
+     *
+     * Road index map:
+     *   R1=0(exit) R2=1 R3=2 R4=3 R5=4 R6=5 R7=6 R8=7
+     *
+     * Route map (dest_road = final road; R1/R6 have out=-1 → complete on arrival):
+     *   R3(2) → I1 → R1(0)                   dst=0
+     *   R4(3) → I1 → R1(0)                   dst=0  (via R4: I2→I1)
+     *   R2(1) → I1 → R1(0)                   dst=0
+     *   R7(6) → I2 → R4(3) → I1 → R1(0)     dst=0
+     *   R3(2) → I1 → R5(4) → I3 → R6(5)     dst=5
+     *   R7(6) → I2 → R8(7) → I3 → R6(5)     dst=5
+     *   R2(1) → I1 → R5(4) → I3 → R6(5)     dst=5
+     *
+     * I1 has outgoing=[R1,R5]; moveVehicles picks R1 if dst=0, else R5.
+     */
+    s->num_vehicles = 28; s->total_time_steps = 15;
+
+    /* R3→R1 (exit north) */
+    setVeh(s, 0, 0, 0,2,0,25,NORMAL);
+    setVeh(s, 1, 1, 0,2,0,25,NORMAL);
+    setVeh(s, 2, 2, 1,2,0,20,NORMAL);
+    setVeh(s, 3, 3, 2,2,0,25,NORMAL);
+    setVeh(s, 4, 4, 3,2,0,20,NORMAL);
+    /* R3→R5→R6 */
+    setVeh(s, 5, 5, 0,2,5,25,NORMAL);
+    setVeh(s, 6, 6, 1,2,5,20,NORMAL);
+    setVeh(s, 7, 7, 2,2,0,25,NORMAL);
+    setVeh(s, 8, 8, 3,2,0,20,NORMAL);
+    /* R4→R1 (via I2→I1→exit) */
+    setVeh(s, 9, 9, 0,3,0,20,NORMAL);
+    setVeh(s,10,10, 1,3,5,20,NORMAL);
+    setVeh(s,11,11, 2,3,5,20,NORMAL);
+    setVeh(s,12,12, 3,3,5,20,NORMAL);
+    /* R2→R1 (Bus Stand return → exit north) */
+    setVeh(s,13,13, 0,1,5,20,NORMAL);
+    setVeh(s,14,14, 1,1,0,20,NORMAL);
+    setVeh(s,15,15, 2,1,0,20,NORMAL);
+    /* R7→R4→R1 */
+    setVeh(s,16,16, 0,6,0,20,NORMAL);
+    setVeh(s,17,17, 1,6,0,20,NORMAL);
+    setVeh(s,18,18, 2,6,0,20,NORMAL);
+    /* R3→R5→R6 (south exit path) */
+    setVeh(s,19,19, 0,2,5,25,NORMAL);
+    setVeh(s,20,20, 2,2,5,25,NORMAL);
+    /* R7→R8→R6 */
+    setVeh(s,21,21, 1,6,5,20,NORMAL);
+    /* EMERGENCY via R1 exit */
+    setVeh(s,22,22, 0,2,0,40,EMERGENCY); /* R3→R1 emerg */
+    setVeh(s,23,23, 0,3,0,40,EMERGENCY); /* R4→R1 emerg */
+    /* R2→R5→R6 */
+    setVeh(s,24,24, 4,1,5,20,NORMAL);
+    setVeh(s,25,25, 5,1,5,20,NORMAL);
+    /* Late entries */
+    setVeh(s,26,26, 7,6,5,20,NORMAL);
+    setVeh(s,27,27, 8,2,0,25,NORMAL);
 }
 
+/*
+ * ── ADYAR ─────────────────────────────────────────────────────
+ *
+ *  Network topology
+ *
+ *              [ext]──R1──▶ I0 ──R2──▶ I1 ◀──R6──[ext]
+ *              [ext]──R3──▶ I0          ▲   ◀──R7──[ext]
+ *              [ext]──R4──▶ I0          │     (I1 = depot terminus)
+ *                            └──R5──▶ I2 ◀──R8──[ext]
+ *                                       └──R9──▶ [ext]
+ *
+ *  I0 (Adyar Main)   : in=[R1,R3,R4]   out=[R2,R5]
+ *  I1 (Depot Jn)     : in=[R2,R6,R7]   out=[]  ← depot terminus
+ *  I2 (Bus Stand Jn) : in=[R5,R8]       out=[R9]
+ */
 static void initAdyar(SimCtx *s) {
-    /*
-     * FIXED TOPOLOGY (9 roads, 3 intersections):
-     *   R4: I1->OUT (was ext->I1)
-     *   R6: I2->OUT (was ext->I2)
-     *
-     *   [ext]--R1--> I1 --R2--> I2 --R6--> [ext]
-     *   [ext]--R3--> I1  R4->[ext]
-     *                I1 --R5--> I3 --R9--> [ext]
-     *   [ext]--R7--> I2
-     *   [ext]--R8--> I3
-     *
-     *   I1 (Adyar Main) : in=[R1,R3]      out=[R2,R4,R5]
-     *   I2 (Depot Jn)   : in=[R2,R7]      out=[R6]
-     *   I3 (Bus Stand)  : in=[R5,R8]      out=[R9]
-     */
     strncpy(s->location_name, "Adyar Signal, Chennai", 127);
     s->num_roads = 9;
-    /*           idx  name                               cap spd thr  in  out */
-    setRoad(s,0,"Adyar Bridge Road (ext->I1)",           8, 30, 5,  -1,  0);
-    setRoad(s,1,"LB Road East (I1->I2)",                 6, 25, 4,   0,  1);
-    setRoad(s,2,"LB Road West (ext->I1)",                7, 25, 5,  -1,  0);
-    setRoad(s,3,"Kasturba Nagar slip (I1->OUT)",         4, 20, 2,   0, -1); /* CHANGED */
-    setRoad(s,4,"Adyar River svc road (I1->I3)",         5, 20, 3,   0,  2);
-    setRoad(s,5,"Gandhi Nagar Main Rd (I2->OUT)",        6, 25, 4,   1, -1); /* CHANGED */
-    setRoad(s,6,"Adyar Depot Road (ext->I2)",            5, 20, 3,  -1,  1);
-    setRoad(s,7,"Lattice Bridge South (ext->I3)",        6, 30, 4,  -1,  2);
-    setRoad(s,8,"Bus Stand exit road (I3->ext)",         5, 20, 3,   2, -1);
+    /*           idx  name                                    cap spd thr  in  out */
+    setRoad(s,0,"Adyar Bridge Road (North, ext → I0)",       8, 30, 5,  -1,  0);
+    setRoad(s,1,"LB Road East (I0 → Depot Jn)",              6, 25, 4,   0,  1);
+    setRoad(s,2,"LB Road West (ext → I0)",                   7, 25, 5,  -1,  0);
+    setRoad(s,3,"Kasturba Nagar slip (ext → I0)",            4, 20, 2,  -1,  0);
+    setRoad(s,4,"Adyar River svc road (I0 → Bus Stand)",     5, 20, 3,   0,  2);
+    setRoad(s,5,"Gandhi Nagar Main Rd (ext → Depot Jn)",     6, 25, 4,  -1,  1);
+    setRoad(s,6,"Adyar Depot Road (ext → Depot Jn)",         5, 20, 3,  -1,  1);
+    setRoad(s,7,"Lattice Bridge South (ext → Bus Stand)",    6, 30, 4,  -1,  2);
+    setRoad(s,8,"Bus Stand exit road (I2 → ext)",            5, 20, 3,   2, -1);
 
     s->num_intersections = 3;
-
-    /* I1 (Adyar Main): in=[R1,R3]  out=[R2,R4,R5] */
     setInter(s,0,"Adyar Main Signal", 10);
-    addIn(s,0,0); addIn(s,0,2);
-    addOut(s,0,1); addOut(s,0,3); addOut(s,0,4);
+    addIn(s,0,0); addIn(s,0,2); addIn(s,0,3);   /* R1,R3,R4 arrive   */
+    addOut(s,0,1); addOut(s,0,4);                /* R2,R5 depart      */
 
-    /* I2 (Depot Jn): in=[R2,R7]  out=[R6] */
     setInter(s,1,"Adyar Depot Junction", 7);
-    addIn(s,1,1); addIn(s,1,6);
-    addOut(s,1,5);
+    addIn(s,1,1); addIn(s,1,5); addIn(s,1,6);   /* R2,R6,R7 arrive   */
+    /* No outgoing — depot terminus; vehicles complete here */
 
-    /* I3 (Bus Stand): in=[R5,R8]  out=[R9] */
     setInter(s,2,"Adyar Bus Stand Junction", 6);
-    addIn(s,2,4); addIn(s,2,7);
-    addOut(s,2,8);
+    addIn(s,2,4); addIn(s,2,7);                  /* R5,R8 arrive      */
+    addOut(s,2,8);                               /* R9 departs → exit */
 
     s->num_vehicles = 22; s->total_time_steps = 15;
-    /* Valid paths: R1->I1->R2->I2->R6->exit
-     *             R1->I1->R4->exit
-     *             R1->I1->R5->I3->R9->exit
-     *             R7->I2->R6->exit  */
-    setVeh(s, 0, 0, 0,0,1,30,NORMAL);    /* R1->R2(->I2->R6)  */
+    setVeh(s, 0, 0, 0,0,1,30,NORMAL);   /* R1→R2(→I1) */
     setVeh(s, 1, 1, 0,0,1,30,NORMAL);
-    setVeh(s, 2, 2, 0,0,4,25,NORMAL);    /* R1->R5(->I3->R9)  */
-    setVeh(s, 3, 3, 2,0,1,25,NORMAL);    /* R3->R2            */
-    setVeh(s, 4, 4, 2,0,4,25,NORMAL);    /* R3->R5            */
-    setVeh(s, 5, 5, 2,2,1,25,NORMAL);    /* R3->R2            */
-    setVeh(s, 6, 6, 2,0,3,20,NORMAL);    /* R1->R4(->exit)    */
-    setVeh(s, 7, 7, 2,0,4,20,NORMAL);    /* R1->R5            */
-    setVeh(s, 8, 8, 2,0,4,30,EMERGENCY); /* R1->R5 emerg      */
-    setVeh(s, 9, 9, 3,2,1,30,NORMAL);    /* R3->R2            */
+    setVeh(s, 2, 2, 0,0,4,25,NORMAL);   /* R1→R5(→I2) */
+    setVeh(s, 3, 3, 2,0,1,25,NORMAL);   /* R3→R2      */
+    setVeh(s, 4, 4, 2,0,4,25,NORMAL);   /* R3→R5      */
+    setVeh(s, 5, 5, 2,2,1,25,NORMAL);   /* R3→R2      */
+    setVeh(s, 6, 6, 2,3,1,20,NORMAL);   /* R4→R2      */
+    setVeh(s, 7, 7, 2,3,4,20,NORMAL);   /* R4→R5      */
+    setVeh(s, 8, 8, 2,0,4,30,EMERGENCY);/* R1→R5 emerg */
+    setVeh(s, 9, 9, 3,2,1,30,NORMAL);   /* R3→R2      */
     setVeh(s,10,10, 3,2,1,25,NORMAL);
-    setVeh(s,11,11, 2,6,5,25,NORMAL);    /* R7->R6(I2->exit)  */
-    setVeh(s,12,12, 2,6,5,25,NORMAL);
-    setVeh(s,13,13, 3,6,5,25,NORMAL);
-    setVeh(s,14,14, 4,6,5,25,EMERGENCY); /* R7->R6 emerg      */
-    setVeh(s,15,15, 5,7,8,25,NORMAL);    /* R8->R9            */
-    setVeh(s,16,16, 5,0,1,30,NORMAL);    /* R1->R2            */
-    setVeh(s,17,17, 5,2,4,25,NORMAL);    /* R3->R5            */
-    setVeh(s,18,18, 6,0,3,20,NORMAL);    /* R1->R4            */
-    setVeh(s,19,19, 6,7,8,30,NORMAL);    /* R8->R9            */
-    setVeh(s,20,20, 7,7,4,30,NORMAL);    /* R8->R5            */
-    setVeh(s,21,21, 7,2,1,25,NORMAL);    /* R3->R2            */
+    setVeh(s,11,11, 2,5,8,25,NORMAL);   /* R6→R2(via I1→exit via R9 — src road R6=idx5) */
+    setVeh(s,12,12, 2,5,8,25,NORMAL);
+    setVeh(s,13,13, 3,5,8,25,NORMAL);   /* R6→dest R9 */
+    setVeh(s,14,14, 4,5,8,25,EMERGENCY);/* R6→R9 emerg */
+    setVeh(s,15,15, 5,7,8,25,NORMAL);   /* R8(idx7)→R9(idx8) */
+    setVeh(s,16,16, 5,0,1,30,NORMAL);   /* R1→R2      */
+    setVeh(s,17,17, 5,2,4,25,NORMAL);   /* R3→R5      */
+    setVeh(s,18,18, 6,3,1,20,NORMAL);   /* R4→R2      */
+    setVeh(s,19,19, 6,7,8,30,NORMAL);   /* R8→R9      */
+    setVeh(s,20,20, 7,7,4,30,NORMAL);   /* R8→R5      */
+    setVeh(s,21,21, 7,2,1,25,NORMAL);   /* R3→R2      */
 }
 
+/*
+ * ── VELACHERY ─────────────────────────────────────────────────
+ *
+ *  CORRECTED Topology (9 roads — R2 removed as duplicate):
+ *
+ *   R1(0): OUT → I1       R3(1): I1 → OUT
+ *   R4(2): OUT → I1       R5(3): I1 → I2   ← Phoenix Mall access
+ *   R6(4): I2  → I1       R7(5): I2 → I3
+ *   R8(6): I3  → OUT      R9(7): OUT → I3
+ *   R10(8): I2 → OUT
+ *
+ *   I1 (Main Signal)  : in=[R1,R4,R6]    out=[R3,R5]
+ *   I2 (Phoenix Mall) : in=[R5]           out=[R6,R7,R10]
+ *   I3 (South Jn)     : in=[R7,R9]       out=[R8]
+ *
+ *  Valid paths:
+ *   R1→R5→R7→R8   R4→R5→R7→R8   R6→R5→R3
+ *   R9→R8(via I3) R1→R5→R10     R6→R5→R7→R8
+ */
 static void initVelachery(SimCtx *s) {
-    /*
-     * FIXED TOPOLOGY (10 roads, 3 intersections):
-     *   R3: I1->OUT (was ext->I1)
-     *   R5: I2->I1  (was ext->I2)
-     *   R8: I3->OUT (was ext->I3)
-     *
-     *   [ext]--R1--> I1 --R2--> I2 --R6--> I3 --R9--> [ext]
-     *   [ext]--R4--> I1  R3->[ext]   R5->I1  R10->[ext]
-     *                           ^    R7->[ext]
-     *                I2--R5-->  I1
-     *
-     *   I1 (Main Signal)  : in=[R1,R4,R6]    out=[R2,R3]
-     *   I2 (Phoenix Mall) : in=[R2,R7]        out=[R5,R7,R10]
-     *   I3 (South Jn)     : in=[R7,R9]        out=[R8]
-     *
-     *   NOTE: road idx vs display:
-     *     idx0=R1 idx1=R2 idx2=R3 idx3=R4 idx4=R5
-     *     idx5=R6 idx6=R7 idx7=R8 idx8=R9 idx9=R10
-     */
     strncpy(s->location_name, "Velachery Main Road Junction, Chennai", 127);
-    s->num_roads = 10;
-    /*           idx  name                               cap spd thr  in  out */
-    setRoad(s,0,"Velachery Main Rd North (ext->I1)",     8, 30, 5,  -1,  0);
-    setRoad(s,1,"Velachery Main Rd (I1->I2)",            7, 30, 5,   0,  1);
-    setRoad(s,2,"100 Feet Road (I1->OUT)",               6, 25, 4,   0, -1); /* CHANGED */
-    setRoad(s,3,"Inner Ring Road West (ext->I1)",        7, 30, 5,  -1,  0);
-    setRoad(s,4,"Phoenix Mall access (I1->I2)",          5, 20, 3,   0,  1);
-    setRoad(s,5,"Taramani Link Rd (I2->I1)",             6, 25, 4,   1,  0); /* CHANGED */
-    setRoad(s,6,"Velachery-Taramani (I2->I3)",           5, 20, 3,   1,  2);
-    setRoad(s,7,"Velachery Lake Road (ext->I3)",         4, 20, 2,  -1,  2);
-    setRoad(s,8,"MRTS feeder road (I3->OUT)",            5, 25, 3,   2, -1); /* CHANGED */
-    setRoad(s,9,"Velachery exit Guindy (I2->ext)",       6, 30, 4,   1, -1);
+    s->num_roads = 9;
+    /*           idx  name                                          cap spd thr  in   out */
+    setRoad(s,0,"Velachery Main Rd North (OUT \xe2\x86\x92 I1)",    8, 30, 5,  -1,   0); /* R1  */
+    setRoad(s,1,"100 Feet Road exit (I1 \xe2\x86\x92 OUT)",         6, 25, 4,   0,  -1); /* R3  */
+    setRoad(s,2,"Inner Ring Rd West (OUT \xe2\x86\x92 I1)",         7, 30, 5,  -1,   0); /* R4  */
+    setRoad(s,3,"Phoenix Mall access (I1 \xe2\x86\x92 I2)",         6, 25, 4,   0,   1); /* R5  */
+    setRoad(s,4,"Taramani return (I2 \xe2\x86\x92 I1)",             5, 20, 3,   1,   0); /* R6  */
+    setRoad(s,5,"Velachery\xe2\x80\x93Taramani (I2 \xe2\x86\x92 I3)",5,20, 3,   1,   2); /* R7  */
+    setRoad(s,6,"Lake Rd exit (I3 \xe2\x86\x92 OUT)",               4, 20, 2,   2,  -1); /* R8  */
+    setRoad(s,7,"MRTS feeder (OUT \xe2\x86\x92 I3)",                5, 25, 3,  -1,   2); /* R9  */
+    setRoad(s,8,"Exit Guindy (I2 \xe2\x86\x92 OUT)",                6, 30, 4,   1,  -1); /* R10 */
 
     s->num_intersections = 3;
 
-    /* I1 (Main Signal): in=[R1,R4,R6]  out=[R2,R3]
-     *   idx: R1=0, R4=3, R6=5   R2=1, R3=2         */
+    /* I1 = idx 0 : Main Signal */
     setInter(s,0,"Velachery Main Signal", 10);
-    addIn(s,0,0); addIn(s,0,3); addIn(s,0,4);
-    addOut(s,0,1); addOut(s,0,2);
+    addIn(s,0,0); addIn(s,0,2); addIn(s,0,4);  /* R1, R4, R6         */
+    addOut(s,0,1); addOut(s,0,3);               /* R3(exit), R5(→I2)  */
 
-    /* I2 (Phoenix Mall): in=[R2,R6]  out=[R5,R7,R10]
-     *   idx: R2=1, R6=5   R5=4, R7=6, R10=9        */
+    /* I2 = idx 1 : Phoenix Mall Junction */
     setInter(s,1,"Phoenix Mall Junction", 8);
-    addIn(s,1,1); addIn(s,1,5);
-    addOut(s,1,4); addOut(s,1,6); addOut(s,1,9);
+    addIn(s,1,3);                               /* R5 only            */
+    addOut(s,1,4); addOut(s,1,5); addOut(s,1,8);/* R6(→I1),R7(→I3),R10(exit) */
 
-    /* I3 (South Jn): in=[R7,R8]  out=[R9]
-     *   idx: R7=6, R8=7   R9=8                      */
+    /* I3 = idx 2 : South Junction */
     setInter(s,2,"Velachery South Junction", 6);
-    addIn(s,2,6); addIn(s,2,7);
-    addOut(s,2,8);
+    addIn(s,2,5); addIn(s,2,7);                 /* R7, R9             */
+    addOut(s,2,6);                              /* R8 (exit)          */
 
-    s->num_vehicles = 28; s->total_time_steps = 20;
-    /* Exit roads: R3(idx2)=I1->OUT, R9(idx8)=I3->OUT, R10(idx9)=I2->ext
-     * I1.out=[R2(1),R3(2),R5(4)]  I2.out=[R6(5),R7(6),R10(9)]  I3.out=[R9(8)]
-     * dst=9(R10): I1->I2->R10->exit | dst=2(R3): I1->R3->exit | dst=8(R9): I3->R9->exit */
-    setVeh(s, 0, 0, 0,0,9,30,NORMAL);    /* R1->R10(I1->I2->exit)  */
-    setVeh(s, 1, 1, 0,0,9,30,NORMAL);
-    setVeh(s, 2, 2, 0,0,2,25,NORMAL);    /* R1->R3(I1->exit)       */
-    setVeh(s, 3, 3, 0,3,9,30,NORMAL);    /* R4->R10                */
-    setVeh(s, 4, 4, 1,3,9,30,NORMAL);
-    setVeh(s, 5, 5, 1,3,2,30,NORMAL);    /* R4->R3                 */
-    setVeh(s, 6, 6, 1,0,9,30,NORMAL);    /* R1->R10                */
-    setVeh(s, 7, 7, 1,0,2,25,NORMAL);    /* R1->R3                 */
-    setVeh(s, 8, 8, 1,0,9,30,EMERGENCY); /* R1->R10 emerg          */
-    setVeh(s, 9, 9, 1,5,9,25,NORMAL);    /* R6(I2->I1)->R10        */
-    setVeh(s,10,10, 1,5,9,25,NORMAL);
-    setVeh(s,11,11, 2,5,9,25,NORMAL);
-    setVeh(s,12,12, 2,5,9,25,NORMAL);
-    setVeh(s,13,13, 2,5,9,25,EMERGENCY);
-    setVeh(s,14,14, 2,0,9,30,NORMAL);    /* R1->R10                */
-    setVeh(s,15,15, 2,0,9,30,NORMAL);
-    setVeh(s,16,16, 3,7,8,25,NORMAL);    /* R8(ext->I3)->R9->exit  */
-    setVeh(s,17,17, 3,7,8,25,NORMAL);
-    setVeh(s,18,18, 3,0,9,30,NORMAL);    /* R1->R10                */
-    setVeh(s,19,19, 3,0,2,25,NORMAL);    /* R1->R3                 */
-    setVeh(s,20,20, 4,0,9,30,NORMAL);    /* R1->R10                */
-    setVeh(s,21,21, 4,5,9,25,NORMAL);    /* R6->R10                */
-    setVeh(s,22,22, 5,7,8,25,NORMAL);    /* R8->R9                 */
-    setVeh(s,23,23, 5,0,2,25,NORMAL);    /* R1->R3                 */
-    setVeh(s,24,24, 6,0,9,30,NORMAL);    /* R1->R10                */
-    setVeh(s,25,25, 6,5,9,25,NORMAL);    /* R6->R10                */
-    setVeh(s,26,26, 7,7,8,20,NORMAL);    /* R8->R9                 */
-    setVeh(s,27,27, 8,0,9,30,NORMAL);    /* R1->R10                */
+    /*
+     * Road index map (0-based):
+     *   R1=0 R3=1 R4=2 R5=3 R6=4 R7=5 R8=6 R9=7 R10=8
+     *
+     * dest_road routing (moveVehicles picks outgoing road matching dst,
+     * or outgoing[0] as fallback):
+     *   R1→R5→R7→R8 : src=0, dst=6  (R8 has out=-1 → completes on enqueue)
+     *   R4→R5→R7→R8 : src=2, dst=6
+     *   R6→R5→R3    : src=4, dst=1  (R3 has out=-1 → completes on enqueue)
+     *   R9→I3→R8    : src=7, dst=6  (enters I3; I3 out=[R8]; reaches R8→complete)
+     *   R1→R5→R10   : src=0, dst=8  (R10 has out=-1 → completes on enqueue)
+     *   R4→R5→R10   : src=2, dst=8
+     *   R6→R5→R7→R8 : src=4, dst=6
+     */
+    s->num_vehicles = 28; s->total_time_steps = 15;
+
+    /* R1→R5→R7→R8 */
+    setVeh(s, 0, 0, 0,0,6,30,NORMAL);
+    setVeh(s, 1, 1, 0,0,6,25,NORMAL);
+    setVeh(s, 2, 2, 1,0,6,30,NORMAL);
+    setVeh(s, 3, 3, 2,0,6,25,NORMAL);
+    /* R4→R5→R7→R8 */
+    setVeh(s, 4, 4, 0,2,6,30,NORMAL);
+    setVeh(s, 5, 5, 1,2,6,30,NORMAL);
+    setVeh(s, 6, 6, 2,2,6,25,NORMAL);
+    setVeh(s, 7, 7, 3,2,6,25,NORMAL);
+    /* R6→R5→R3 (Taramani return → west exit) */
+    setVeh(s, 8, 8, 0,4,1,20,NORMAL);
+    setVeh(s, 9, 9, 1,4,1,20,NORMAL);
+    setVeh(s,10,10, 2,4,1,20,NORMAL);
+    setVeh(s,11,11, 3,4,1,20,NORMAL);
+    /* R9→I3→R8 (MRTS feeder direct south) */
+    setVeh(s,12,12, 0,7,6,25,NORMAL);
+    setVeh(s,13,13, 1,7,6,25,NORMAL);
+    setVeh(s,14,14, 2,7,6,25,NORMAL);
+    /* R1→R5→R10 (exit Guindy) */
+    setVeh(s,15,15, 0,0,8,30,NORMAL);
+    setVeh(s,16,16, 2,0,8,30,NORMAL);
+    setVeh(s,17,17, 4,0,8,25,NORMAL);
+    /* R4→R5→R10 */
+    setVeh(s,18,18, 1,2,8,30,NORMAL);
+    setVeh(s,19,19, 3,2,8,25,NORMAL);
+    /* R6→R5→R7→R8 */
+    setVeh(s,20,20, 0,4,6,20,NORMAL);
+    setVeh(s,21,21, 2,4,6,20,NORMAL);
+    setVeh(s,22,22, 4,4,6,20,NORMAL);
+    /* EMERGENCY */
+    setVeh(s,23,23, 0,0,6,40,EMERGENCY); /* R1→R8 emerg */
+    setVeh(s,24,24, 1,2,6,40,EMERGENCY); /* R4→R8 emerg */
+    setVeh(s,25,25, 0,4,1,40,EMERGENCY); /* R6→R3 emerg */
+    /* Late entries */
+    setVeh(s,26,26, 5,0,6,30,NORMAL);
+    setVeh(s,27,27, 6,7,6,25,NORMAL);
 }
 
+/*
+ * FIX 3: Scale vehicles up or down to match requested count.
+ * Fewer → keep first N by index (earliest entries preserved).
+ * More  → duplicate existing vehicles with evenly spread entry times.
+ */
 static void scaleVehicles(SimCtx *s, int target) {
     int base = s->num_vehicles;
     if (target <= 0 || target == base) return;
@@ -692,14 +735,80 @@ static void moveVehicles(SimCtx *s) {
         if (s->vehicles[vi].type == EMERGENCY) handleEmergency(s, vid);
         int dest   = s->vehicles[vi].dest_road;
         int target = -1;
+
+        /* Pass A: direct match — dest is one of our outgoing roads */
         for (int o = 0; o < in->num_outgoing; o++)
             if (in->outgoing_roads[o] == dest) { target = dest; break; }
-        if (target < 0 && in->num_outgoing > 0) target = in->outgoing_roads[0];
+
+        /* Pass B: lookahead — find an outgoing road whose downstream
+         * intersection has dest in its own outgoing set.
+         * This lets vehicles at I1 route toward R6 via R5→I3→R6
+         * instead of greedily taking R1 (wrong exit). */
+        if (target < 0) {
+            for (int o = 0; o < in->num_outgoing; o++) {
+                int via_road  = in->outgoing_roads[o];
+                int next_i    = s->roads[via_road].intersection_out;
+                if (next_i < 0) continue; /* via_road is itself an exit */
+                Intersection *next_in = &s->intersections[next_i];
+                for (int oo = 0; oo < next_in->num_outgoing; oo++) {
+                    if (next_in->outgoing_roads[oo] == dest) {
+                        target = via_road;
+                        break;
+                    }
+                }
+                if (target >= 0) break;
+            }
+        }
+
+        /* Pass C: two-hop lookahead (catches R3→I1→R5→I3→R6 style paths) */
+        if (target < 0) {
+            for (int o = 0; o < in->num_outgoing; o++) {
+                int via_road = in->outgoing_roads[o];
+                int next_i   = s->roads[via_road].intersection_out;
+                if (next_i < 0) continue;
+                Intersection *next_in = &s->intersections[next_i];
+                for (int oo = 0; oo < next_in->num_outgoing; oo++) {
+                    int via2     = next_in->outgoing_roads[oo];
+                    int next_i2  = s->roads[via2].intersection_out;
+                    if (next_i2 < 0) continue;
+                    Intersection *next_in2 = &s->intersections[next_i2];
+                    for (int ooo = 0; ooo < next_in2->num_outgoing; ooo++) {
+                        if (next_in2->outgoing_roads[ooo] == dest) {
+                            target = via_road;
+                            break;
+                        }
+                    }
+                    if (target >= 0) break;
+                }
+                if (target >= 0) break;
+            }
+        }
+
+        /* Pass D: safe fallback — only use first outgoing if dest is an
+         * exit road (inter_out=-1) reachable from first outgoing,
+         * or if no better path found at all */
+        if (target < 0 && in->num_outgoing > 0) {
+            /* Prefer outgoing roads that are NOT immediate exits
+             * when dest is not an immediate exit either */
+            int dest_is_exit = (s->roads[dest].intersection_out < 0);
+            if (dest_is_exit) {
+                /* dest exits the network — take the first outgoing road
+                 * that is NOT itself an exit (keep routing through network) */
+                for (int o = 0; o < in->num_outgoing; o++) {
+                    if (s->roads[in->outgoing_roads[o]].intersection_out >= 0) {
+                        target = in->outgoing_roads[o];
+                        break;
+                    }
+                }
+            }
+            /* Final fallback */
+            if (target < 0) target = in->outgoing_roads[0];
+        }
         if (in->num_outgoing == 0) {
             qDequeue(s, groad);
             s->vehicles[vi].active = 0; s->vehicles[vi].completed = 1;
             s->metrics.total_completed++; in->total_vehicles_served++;
-            evFmt("[ARRIVED] V%d I%d|", vid+1, i+1);
+            evFmt("[ARRIVED] V%d R%d|", vid+1, s->vehicles[vi].dest_road+1);
             continue;
         }
         if (target < 0) continue;

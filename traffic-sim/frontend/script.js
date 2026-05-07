@@ -33,7 +33,7 @@ const tsSlider = document.getElementById('timestepSlider');
 const tsHint   = document.getElementById('tsHint');
 tsSlider.addEventListener('input', () => {
     const v = tsSlider.value;
-    tsHint.textContent = `${v} steps (~${v * 2} min)`;
+    tsHint.textContent = `${v} steps (~${v * 10} sec)`;
 });
 
 /* ---- Vehicle count controls ---- */
@@ -139,12 +139,13 @@ function renderStep(stepIdx) {
     const step = simData.steps[stepIdx];
 
     /* Step label — now includes active vehicle count */
-    const timeMin = stepIdx * 2;
-    const hh = 8 + Math.floor(timeMin / 60);
-    const mm  = String(timeMin % 60).padStart(2, '0');
+    const _sec = stepIdx * 10;
+    const hh  = 8 + Math.floor(_sec / 3600);
+    const mm  = String(Math.floor((_sec % 3600) / 60)).padStart(2, '0');
+    const ss  = String(_sec % 60).padStart(2, '0');
     const activeVeh = step.active_vehicles !== undefined ? step.active_vehicles : '?';
     document.getElementById('stepLabel').textContent =
-        `Step ${String(stepIdx).padStart(2,'0')}  —  ${hh}:${mm} AM  |  🚗 ${activeVeh} active`;
+        `Step ${String(stepIdx).padStart(2,'0')}  —  ${hh}:${mm}:${ss} AM  |  🚗 ${activeVeh} active`;
 
     /* Road congestion bars — use raw road_cong (fixed: truly 0 when empty) */
     const roadBars = document.getElementById('roadBars');
@@ -329,7 +330,7 @@ function renderReport() {
         <div class="report-section">
             <div class="report-heading">Simulation Summary</div>
             ${row('Location', simData.location)}
-            ${row('Period', `08:00 — 08:${String(m.total_steps*2).padStart(2,'0')} AM`)}
+            ${row('Period', (() => { const e=m.total_steps*10; const eh=8+Math.floor(e/3600); const em=String(Math.floor((e%3600)/60)).padStart(2,'0'); const es=String(e%60).padStart(2,'0'); return `08:00:00 — ${eh}:${em}:${es} AM`; })())}
             ${row('Total vehicles', m.total_vehicles)}
             ${row('Entered network', m.entered)}
             ${row('Completed journey', m.completed)}
@@ -501,9 +502,9 @@ const NETWORK_LAYOUTS = {
             { id:'I2', label:'I3\nBus Stand',   x:0.78, y:0.72 },
         ],
         edges: [
-            /* R1  ext(top) → I1=(0.47,0.35)  ↓  endpoint pinned to I1 */
-            { rid:1, label:'R1', x1:0.47, y1:0.08, x2:0.47, y2:0.35, offset:-7, labelSide:-1 },
-            /* R2  I1=(0.47,0.35) → I3=(0.78,0.72)  ↘ UPPER diagonal — starts upper-left of I1 */
+            /* R1  I1=(0.47,0.35) → ext(top)  ↑  I1→OUT (exit road) */
+            { rid:1, label:'R1', x1:0.47, y1:0.35, x2:0.47, y2:0.08, offset:-7, labelSide:-1 },
+            /* R2  I3 → I1  ← upper arc (reversed: traffic flows from I3 back to I1) */
             { rid:2, label:'R2', x1:0.75, y1:0.69, x2:0.44, y2:0.32, offset:14, labelSide:1 },
             /* R3  ext(left) → I1=(0.47,0.35)  →  endpoint pinned */
             { rid:3, label:'R3', x1:0.08, y1:0.35, x2:0.47, y2:0.35, offset:-6, labelSide:-1 },
@@ -512,7 +513,7 @@ const NETWORK_LAYOUTS = {
             /* R5  I1=(0.47,0.35) → I3=(0.78,0.72)  ↘ LOWER diagonal — starts lower-right of I1 */
             { rid:5, label:'R5', x1:0.50, y1:0.38, x2:0.81, y2:0.75, offset: 14, labelSide: 1 },
             /* R6  ext(bottom-right) → I3=(0.78,0.72)  ↖  endpoint pinned */
-            { rid:6, label:'R6', x1:0.94, y1:0.88, x2:0.78, y2:0.72, offset:-5, labelSide:-1 },
+            { rid:6, label:'R6', x1:0.78, y1:0.72, x2:0.94, y2:0.88, offset:-5, labelSide:-1 },
             /* R7  ext(bottom) → I2=(0.18,0.72)  ↑  endpoint pinned */
             { rid:7, label:'R7', x1:0.18, y1:0.94, x2:0.18, y2:0.72, offset:-6, labelSide:-1 },
             /* R8  I2=(0.18,0.72) → I3=(0.78,0.72)  →  both pinned */
@@ -541,7 +542,7 @@ const NETWORK_LAYOUTS = {
         edges: [
             /* R1  ext(top) → I1=(0.38,0.44)  ↓  endpoint pinned to I1 */
             { rid:1, label:'R1', x1:0.38, y1:0.08, x2:0.38, y2:0.44, offset:-7, labelSide:-1 },
-            /* R2  I1=(0.38,0.44) → I2=(0.76,0.28)  ↗  both pinned */
+            /* R2  I2=(0.76,0.28) → I1=(0.38,0.44)  ↙  reversed: traffic flows from I2 to I1 */
             { rid:2, label:'R2', x1:0.38, y1:0.44, x2:0.76, y2:0.28, offset:-6, labelSide:-1 },
             /* R3  ext(left) → I1=(0.38,0.44)  →  endpoint pinned */
             { rid:3, label:'R3', x1:0.08, y1:0.44, x2:0.38, y2:0.44, offset:-6, labelSide:-1 },
@@ -562,10 +563,10 @@ const NETWORK_LAYOUTS = {
 
     /* ================================================================
        LOC 3 — VELACHERY  (10 roads)
-       Verified backend topology:
-         I1 (Main Signal)  : in=[R1,R3,R4]    out=[R2,R5]
-         I2 (Phoenix Mall) : in=[R2,R5,R6]    out=[R7,R10]
-         I3 (South Jn)     : in=[R7,R8,R9]   out=[]  terminus
+       Verified backend topology (R2 removed):
+         I1 (Main Signal)  : in=[R1,R4,R6]   out=[R3,R5]
+         I2 (Phoenix Mall) : in=[R5]          out=[R6,R7,R10]
+         I3 (South Jn)     : in=[R7,R9]      out=[R8]
 
        Node positions:
          I1 = (0.45, 0.30)  upper-centre
@@ -579,26 +580,24 @@ const NETWORK_LAYOUTS = {
             { id:'I2', label:'I3\nSouth Jn',     x:0.78, y:0.64 },
         ],
         edges: [
-            /* R1   ext(top) → I1=(0.45,0.30)  ↓  endpoint pinned to I1 */
-            { rid: 1, label:'R1',  x1:0.45, y1:0.08, x2:0.45, y2:0.30, offset:-8, labelSide:-1 },
-            /* R2   I1=(0.45,0.30) → I2=(0.45,0.64)  ↓  both pinned, left arc */
-            { rid: 2, label:'R2',  x1:0.45, y1:0.64, x2:0.45, y2:0.30, offset:8, labelSide:1 },
-            /* R3   ext(left) → I1=(0.45,0.30)  →  endpoint pinned */
-            { rid: 3, label:'R3',  x1:0.08, y1:0.30, x2:0.45, y2:0.30, offset:-6, labelSide:-1 },
-            /* R4   ext(upper-right) → I1=(0.45,0.30)  ↙  endpoint pinned */
-            { rid: 4, label:'R4',  x1:0.88, y1:0.10, x2:0.45, y2:0.30, offset:-5, labelSide:-1 },
-            /* R5   I1=(0.45,0.30) → I2=(0.45,0.64)  ↓  both pinned, right arc */
-            { rid: 5, label:'R5',  x1:0.45, y1:0.30, x2:0.45, y2:0.64, offset: 8, labelSide: 1 },
-            /* R6   ext(left) → I2=(0.45,0.64)  →  endpoint pinned */
-            { rid: 6, label:'R6',  x1:0.08, y1:0.64, x2:0.45, y2:0.64, offset: 6, labelSide: 1 },
-            /* R7   I2=(0.45,0.64) → I3=(0.78,0.64)  →  both pinned */
-            { rid: 7, label:'R7',  x1:0.45, y1:0.64, x2:0.78, y2:0.64, offset:-6, labelSide:-1 },
-            /* R8   ext(lower-right) → I3=(0.78,0.64)  ↖  endpoint pinned */
-            { rid: 8, label:'R8',  x1:0.84, y1:0.90, x2:0.78, y2:0.64, offset: 5, labelSide: 1 },
-            /* R9   ext(bottom-centre) → I3=(0.78,0.64)  ↗  endpoint pinned */
-            { rid: 9, label:'R9',  x1:0.62, y1:0.90, x2:0.78, y2:0.64, offset:-5, labelSide:-1 },
-            /* R10  I2=(0.45,0.64) → ext(bottom)  ↓  start pinned */
-            { rid:10, label:'R10', x1:0.45, y1:0.64, x2:0.45, y2:0.92, offset: 7, labelSide: 1 },
+            /* R1  ext(top) → I1  ↓ */
+            { rid:1, label:'R1',  x1:0.45, y1:0.08, x2:0.45, y2:0.30, offset:-8,  labelSide:-1 },
+            /* R3  I1 → ext(left)  ← */
+            { rid:3, label:'R2',  x1:0.45, y1:0.30, x2:0.08, y2:0.30, offset:-6,  labelSide:-1 },
+            /* R4  ext(upper-right) → I1  ↙ */
+            { rid:4, label:'R3',  x1:0.88, y1:0.10, x2:0.45, y2:0.30, offset:-5,  labelSide:-1 },
+            /* R5  I1 → I2  ↓  right arc (Phoenix Mall access) */
+            { rid:5, label:'R4',  x1:0.45, y1:0.30, x2:0.45, y2:0.64, offset: 10, labelSide: 1 },
+            /* R6  I2 → I1  ↑  left arc (Taramani return) */
+            { rid:6, label:'R5',  x1:0.45, y1:0.64, x2:0.45, y2:0.30, offset:10, labelSide:1 },
+            /* R7  I2 → I3  →  both pinned */
+            { rid:7, label:'R6',  x1:0.45, y1:0.64, x2:0.78, y2:0.64, offset:-6,  labelSide:-1 },
+            /* R8  I3 → ext(bottom)  ↓ */
+            { rid:8, label:'R7',  x1:0.78, y1:0.64, x2:0.78, y2:0.92, offset: 5,  labelSide: 1 },
+            /* R9  ext(lower-left) → I3  ↗ */
+            { rid:9, label:'R8',  x1:0.62, y1:0.90, x2:0.78, y2:0.64, offset:-5,  labelSide:-1 },
+            /* R10 I2 → ext(bottom-centre)  ↓ */
+            { rid:10, label:'R9', x1:0.45, y1:0.64, x2:0.45, y2:0.92, offset: 7, labelSide: 1 },
         ],
     },
 };
@@ -792,10 +791,11 @@ function drawNetworkMap(stepIdx) {
         hasData = true;
         if (pholder) pholder.style.display = 'none';
         if (badge) {
-            const timeMin = stepIdx * 2;
-            const hh = 8 + Math.floor(timeMin / 60);
-            const mm = String(timeMin % 60).padStart(2, '0');
-            badge.textContent = `Step ${stepIdx}  ·  ${hh}:${mm} AM`;
+            const _bs = stepIdx * 10;
+            const _bh = 8 + Math.floor(_bs / 3600);
+            const _bm = String(Math.floor((_bs % 3600) / 60)).padStart(2, '0');
+            const _bss = String(_bs % 60).padStart(2, '0');
+            badge.textContent = `Step ${stepIdx}  ·  ${_bh}:${_bm}:${_bss} AM`;
         }
     } else {
         if (pholder) pholder.style.display = 'flex';
