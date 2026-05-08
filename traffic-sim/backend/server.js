@@ -1,12 +1,11 @@
 /*
- * server.js — Node.js Bridge Server
- * Sits between the browser and the C simulation binary.
- *
- * How it works:
- *   Browser --POST /simulate--> Node.js --spawn--> C binary --JSON--> Node.js --JSON--> Browser
- *
- * Install: npm install express cors
- * Run:     node server.js
+  server.js — Node.js Bridge Server
+  Sits between the browser and the C simulation binary.
+  How it works:
+  Browser --POST /simulate--> Node.js --spawn--> C binary --JSON--> Node.js --JSON--> Browser
+ 
+  Install: npm install express cors
+  Run:     node server.js
  */
 
 const express   = require('express');

@@ -1,16 +1,3 @@
-/*
- * traffic_sim.c — JSON Output Version (Fixed)
- * Compile: gcc -Wall -O2 -o traffic_sim traffic_sim.c
- * Run:     echo '{"location":1,"vehicles":20,"timesteps":15}' | ./traffic_sim
- *
- * Fixes applied:
- *  1. Time step sync: snapshot recorded AFTER all updates. All roads/zones
- *     processed uniformly each step. road_count uses queue_size (active on road).
- *  2. Congestion fix: when queue_size == 0, both raw_congestion and
- *     congestion_index are hard-zeroed. EMA only applied when vehicles exist.
- *  3. Vehicle count control: "vehicles" key in config scales the fleet.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -114,7 +101,7 @@ static void evFmt(const char *fmt, ...) {
     evAppend(buf);
 }
 
-/* ---- Queue ops ---- */
+/*  Queue operations  */
 static int qEnqueue(SimCtx *s, int rid, int vid) {
     Road *r = &s->roads[rid];
     if (r->queue_size >= r->capacity || r->queue_size >= MAX_QUEUE) return 0;
@@ -141,7 +128,7 @@ static int findV (SimCtx *s, int vid) {
     return -1;
 }
 
-/* ---- Builder helpers ---- */
+/*  Builder helpers  */
 static void setRoad(SimCtx *s, int i, const char *nm, int cap, int spd, int thr, int ri, int ro) {
     memset(&s->roads[i], 0, sizeof(Road));
     s->roads[i].id = i; strncpy(s->roads[i].name, nm, 63);
@@ -165,50 +152,34 @@ static void setVeh(SimCtx *s, int i, int id, int et, int src, int dst, int spd, 
     v->active=v->completed=v->counted_this_step=0;
 }
 
-/* ---- Location init ---- */
-/*
- * ── THIRUVANMIYUR ─────────────────────────────────────────────
- *
- *  Network topology  (setRoad args: cap, spd, thr, inter_in, inter_out)
- *
- *              [ext]──R1──▶ I0 ──R2──▶ I2 ◀──R6──[ext]
- *              [ext]──R3──▶ I0                ▲
- *              [ext]──R7──▶ I1 ──R4──▶ I0     │
- *                                       └──R5──┘
- *
- *  I0 (Main Signal)  : in=[R1,R3,R4]   out=[R2,R5]
- *  I1 (RGS Merge)    : in=[R7]          out=[R4]   ← feeds I0
- *  I2 (Bus Stand Jn) : in=[R2,R5,R6]   out=[]      ← network exit
- *
- *  Road index → 0-based; displayed as R(index+1) in the UI.
+/*  
+Location init  
+THIRUVANMIYUR
+  I0 (Main Signal)  : in=[R1,R3,R4]   out=[R2,R5]
+  I1 (RGS Merge)    : in=[R7]          out=[R4]   ← feeds I0
+  I2 (Bus Stand Jn) : in=[R2,R5,R6]   out=[]      ← network exit
+   Road index → 0-based; displayed as R(index+1) in the UI.
  */
 static void initThiruvanmiyur(SimCtx *s) {
     /*
-     * FINAL Topology (8 roads, 3 intersections):
-     *
-     *   R1 : I1  → OUT  (OMR Northbound EXIT from Main Signal)  ← CHANGED
-     *   R2 : I3  → I1   (Bus Stand → Main Signal return arc)
-     *   R3 : OUT → I1   (Lattice Bridge Rd, enters Main Signal)
-     *   R4 : I2  → I1   (RGS Merge → Main Signal)
-     *   R5 : I1  → I3   (Main Signal → Bus Stand)
-     *   R6 : I3  → OUT  (Bus Stand exit to ECR)
-     *   R7 : OUT → I2   (Karpagam Ave → RGS Merge)
-     *   R8 : I2  → I3   (RGS Merge → Bus Stand direct)
-     *
-     *   I1 (Main Signal) : in=[R2,R3,R4]      out=[R1,R5]   ← R1 now an EXIT
-     *   I2 (RGS Merge)   : in=[R7]             out=[R4,R8]
-     *   I3 (Bus Stand)   : in=[R5,R8]          out=[R2,R6]
-     *
-     * Valid paths:
-     *   R3 → R1              R4 → R1            R2 → R1
-     *   R7 → R4 → R1        R3 → R5 → R6
-     *   R7 → R8 → R6        R2 → R5 → R6
-     *
-     * idx  name                                        cap spd thr  in   out
+        FINAL Topology (8 roads, 3 intersections):
+        R1 : I1  → OUT  (OMR Northbound EXIT from Main Signal)  ← CHANGED
+        R2 : I3  → I1   (Bus Stand → Main Signal return arc)
+        R3 : OUT → I1   (Lattice Bridge Rd, enters Main Signal)
+        R4 : I2  → I1   (RGS Merge → Main Signal)
+        R5 : I1  → I3   (Main Signal → Bus Stand)
+        R6 : I3  → OUT  (Bus Stand exit to ECR)
+        R7 : OUT → I2   (Karpagam Ave → RGS Merge)
+        R8 : I2  → I3   (RGS Merge → Bus Stand direct)
+        I1 (Main Signal) : in=[R2,R3,R4]      out=[R1,R5]   ← R1 now an EXIT
+        I2 (RGS Merge)   : in=[R7]             out=[R4,R8]
+        I3 (Bus Stand)   : in=[R5,R8]          out=[R2,R6]
+     
+ idx name cap spd thr in out
      */
     strncpy(s->location_name, "Thiruvanmiyur Signal, Chennai", 127);
     s->num_roads = 8;
-    setRoad(s,0,"OMR Northbound exit (I1 \xe2\x86\x92 OUT)",           8, 25, 5,   0, -1); /* R1 EXIT */
+    setRoad(s,0,"OMR Northbound exit (I1 \xe2\x86\x92 OUT)",           8, 25, 5,   0, -1); /* R1 */
     setRoad(s,1,"Bus Stand Return (I3 \xe2\x86\x92 Main Signal)",      5, 20, 3,   2,  0); /* R2 */
     setRoad(s,2,"Lattice Bridge Rd (OUT \xe2\x86\x92 Main Signal)",    5, 20, 3,  -1,  0); /* R3 */
     setRoad(s,3,"RGS Salai slip (I2 \xe2\x86\x92 Main Signal)",        5, 20, 3,   1,  0); /* R4 */
@@ -219,7 +190,7 @@ static void initThiruvanmiyur(SimCtx *s) {
 
     s->num_intersections = 3;
 
-    /* I1 = idx 0 : Main Signal — R1 is now an outgoing exit road */
+    /* I1 = idx 0 : Main Signal */
     setInter(s,0,"Thiruvanmiyur Main Signal", 9);
     addIn(s,0,1); addIn(s,0,2); addIn(s,0,3);  /* R2, R3, R4 arrive  */
     addOut(s,0,0); addOut(s,0,4);               /* R1(exit), R5(→I3)  */
@@ -235,24 +206,21 @@ static void initThiruvanmiyur(SimCtx *s) {
     addOut(s,2,1); addOut(s,2,5);               /* R2, R6      */
 
     /*
-     * Vehicles  (src/dst = 0-based road indices)
-     *
-     * Road index map:
-     *   R1=0(exit) R2=1 R3=2 R4=3 R5=4 R6=5 R7=6 R8=7
-     *
-     * Route map (dest_road = final road; R1/R6 have out=-1 → complete on arrival):
-     *   R3(2) → I1 → R1(0)                   dst=0
-     *   R4(3) → I1 → R1(0)                   dst=0  (via R4: I2→I1)
-     *   R2(1) → I1 → R1(0)                   dst=0
-     *   R7(6) → I2 → R4(3) → I1 → R1(0)     dst=0
-     *   R3(2) → I1 → R5(4) → I3 → R6(5)     dst=5
-     *   R7(6) → I2 → R8(7) → I3 → R6(5)     dst=5
-     *   R2(1) → I1 → R5(4) → I3 → R6(5)     dst=5
-     *
-     * I1 has outgoing=[R1,R5]; moveVehicles picks R1 if dst=0, else R5.
+      Vehicles  (src/dst = 0-based road indices)
+     
+      Road index map:
+        R1=0(exit) R2=1 R3=2 R4=3 R5=4 R6=5 R7=6 R8=7
+     
+      Route map (dest_road = final road; R1/R6 have out=-1 → complete on arrival):
+        R3(2) → I1 → R1(0)                   dst=0
+        R4(3) → I1 → R1(0)                   dst=0  
+        R2(1) → I1 → R1(0)                   dst=0
+        R7(6) → I2 → R4(3) → I1 → R1(0)     dst=0
+        R3(2) → I1 → R5(4) → I3 → R6(5)     dst=5
+        R7(6) → I2 → R8(7) → I3 → R6(5)     dst=5
+        R2(1) → I1 → R5(4) → I3 → R6(5)     dst=5
      */
     s->num_vehicles = 28; s->total_time_steps = 15;
-
     /* R3→R1 (exit north) */
     setVeh(s, 0, 0, 0,2,0,25,NORMAL);
     setVeh(s, 1, 1, 0,2,0,25,NORMAL);
@@ -294,24 +262,16 @@ static void initThiruvanmiyur(SimCtx *s) {
 }
 
 /*
- * ── ADYAR ─────────────────────────────────────────────────────
- *
- *  Network topology
- *
- *              [ext]──R1──▶ I0 ──R2──▶ I1 ◀──R6──[ext]
- *              [ext]──R3──▶ I0          ▲   ◀──R7──[ext]
- *              [ext]──R4──▶ I0          │     (I1 = depot terminus)
- *                            └──R5──▶ I2 ◀──R8──[ext]
- *                                       └──R9──▶ [ext]
- *
- *  I0 (Adyar Main)   : in=[R1,R3,R4]   out=[R2,R5]
- *  I1 (Depot Jn)     : in=[R2,R6,R7]   out=[]  ← depot terminus
- *  I2 (Bus Stand Jn) : in=[R5,R8]       out=[R9]
+    ADYAR
+Network topology
+   I0 (Adyar Main)   : in=[R1,R3,R4]   out=[R2,R5]
+   I1 (Depot Jn)     : in=[R2,R6,R7]   out=[] 
+   I2 (Bus Stand Jn) : in=[R5,R8]       out=[R9]
  */
 static void initAdyar(SimCtx *s) {
     strncpy(s->location_name, "Adyar Signal, Chennai", 127);
     s->num_roads = 9;
-    /*           idx  name                                    cap spd thr  in  out */
+    /* idx name cap spd thr  in  out */
     setRoad(s,0,"Adyar Bridge Road (North, ext → I0)",       8, 30, 5,  -1,  0);
     setRoad(s,1,"LB Road East (I0 → Depot Jn)",              6, 25, 4,   0,  1);
     setRoad(s,2,"LB Road West (ext → I0)",                   7, 25, 5,  -1,  0);
@@ -347,42 +307,40 @@ static void initAdyar(SimCtx *s) {
     setVeh(s, 8, 8, 2,0,4,30,EMERGENCY);/* R1→R5 emerg */
     setVeh(s, 9, 9, 3,2,1,30,NORMAL);   /* R3→R2      */
     setVeh(s,10,10, 3,2,1,25,NORMAL);
-    setVeh(s,11,11, 2,5,8,25,NORMAL);   /* R6→R2(via I1→exit via R9 — src road R6=idx5) */
+    setVeh(s,11,11, 2,5,8,25,NORMAL);   /* R6→R2 */
     setVeh(s,12,12, 2,5,8,25,NORMAL);
     setVeh(s,13,13, 3,5,8,25,NORMAL);   /* R6→dest R9 */
     setVeh(s,14,14, 4,5,8,25,EMERGENCY);/* R6→R9 emerg */
-    setVeh(s,15,15, 5,7,8,25,NORMAL);   /* R8(idx7)→R9(idx8) */
-    setVeh(s,16,16, 5,0,1,30,NORMAL);   /* R1→R2      */
-    setVeh(s,17,17, 5,2,4,25,NORMAL);   /* R3→R5      */
-    setVeh(s,18,18, 6,3,1,20,NORMAL);   /* R4→R2      */
-    setVeh(s,19,19, 6,7,8,30,NORMAL);   /* R8→R9      */
-    setVeh(s,20,20, 7,7,4,30,NORMAL);   /* R8→R5      */
-    setVeh(s,21,21, 7,2,1,25,NORMAL);   /* R3→R2      */
+    setVeh(s,15,15, 5,7,8,25,NORMAL);   /* R8→R9 */
+    setVeh(s,16,16, 5,0,1,30,NORMAL);   /* R1→R2 */
+    setVeh(s,17,17, 5,2,4,25,NORMAL);   /* R3→R5 */
+    setVeh(s,18,18, 6,3,1,20,NORMAL);   /* R4→R2 */
+    setVeh(s,19,19, 6,7,8,30,NORMAL);   /* R8→R9 */
+    setVeh(s,20,20, 7,7,4,30,NORMAL);   /* R8→R5 */
+    setVeh(s,21,21, 7,2,1,25,NORMAL);   /* R3→R2 */
 }
 
 /*
- * ── VELACHERY ─────────────────────────────────────────────────
- *
- *  CORRECTED Topology (9 roads — R2 removed as duplicate):
- *
- *   R1(0): OUT → I1       R3(1): I1 → OUT
- *   R4(2): OUT → I1       R5(3): I1 → I2   ← Phoenix Mall access
- *   R6(4): I2  → I1       R7(5): I2 → I3
- *   R8(6): I3  → OUT      R9(7): OUT → I3
- *   R10(8): I2 → OUT
- *
- *   I1 (Main Signal)  : in=[R1,R4,R6]    out=[R3,R5]
- *   I2 (Phoenix Mall) : in=[R5]           out=[R6,R7,R10]
- *   I3 (South Jn)     : in=[R7,R9]       out=[R8]
- *
- *  Valid paths:
- *   R1→R5→R7→R8   R4→R5→R7→R8   R6→R5→R3
- *   R9→R8(via I3) R1→R5→R10     R6→R5→R7→R8
+  VELACHERY
+   CORRECTED Topology (9 roads — R2 removed as duplicate):
+    R1(0): OUT → I1       R3(1): I1 → OUT
+    R4(2): OUT → I1       R5(3): I1 → I2   ← Phoenix Mall access
+    R6(4): I2  → I1       R7(5): I2 → I3
+    R8(6): I3  → OUT      R9(7): OUT → I3
+    R10(8): I2 → OUT
+ 
+    I1 (Main Signal)  : in=[R1,R4,R6]    out=[R3,R5]
+    I2 (Phoenix Mall) : in=[R5]           out=[R6,R7,R10]
+    I3 (South Jn)     : in=[R7,R9]       out=[R8]
+ 
+   Valid paths:
+    R1→R5→R7→R8   R4→R5→R7→R8   R6→R5→R3
+    R9→R8(via I3) R1→R5→R10     R6→R5→R7→R8
  */
 static void initVelachery(SimCtx *s) {
     strncpy(s->location_name, "Velachery Main Road Junction, Chennai", 127);
     s->num_roads = 9;
-    /*           idx  name                                          cap spd thr  in   out */
+    /* idx  name cap spd thr  in   out */
     setRoad(s,0,"Velachery Main Rd North (OUT \xe2\x86\x92 I1)",    8, 30, 5,  -1,   0); /* R1  */
     setRoad(s,1,"100 Feet Road exit (I1 \xe2\x86\x92 OUT)",         6, 25, 4,   0,  -1); /* R3  */
     setRoad(s,2,"Inner Ring Rd West (OUT \xe2\x86\x92 I1)",         7, 30, 5,  -1,   0); /* R4  */
@@ -411,18 +369,18 @@ static void initVelachery(SimCtx *s) {
     addOut(s,2,6);                              /* R8 (exit)          */
 
     /*
-     * Road index map (0-based):
-     *   R1=0 R3=1 R4=2 R5=3 R6=4 R7=5 R8=6 R9=7 R10=8
-     *
-     * dest_road routing (moveVehicles picks outgoing road matching dst,
-     * or outgoing[0] as fallback):
-     *   R1→R5→R7→R8 : src=0, dst=6  (R8 has out=-1 → completes on enqueue)
-     *   R4→R5→R7→R8 : src=2, dst=6
-     *   R6→R5→R3    : src=4, dst=1  (R3 has out=-1 → completes on enqueue)
-     *   R9→I3→R8    : src=7, dst=6  (enters I3; I3 out=[R8]; reaches R8→complete)
-     *   R1→R5→R10   : src=0, dst=8  (R10 has out=-1 → completes on enqueue)
-     *   R4→R5→R10   : src=2, dst=8
-     *   R6→R5→R7→R8 : src=4, dst=6
+      Road index map (0-based):
+        R1=0 R3=1 R4=2 R5=3 R6=4 R7=5 R8=6 R9=7 R10=8
+     
+      dest_road routing (moveVehicles picks outgoing road matching dst,
+      or outgoing[0] as fallback):
+        R1→R5→R7→R8 : src=0, dst=6  
+        R4→R5→R7→R8 : src=2, dst=6
+        R6→R5→R3    : src=4, dst=1  
+        R9→I3→R8    : src=7, dst=6  
+        R1→R5→R10   : src=0, dst=8  
+        R4→R5→R10   : src=2, dst=8
+        R6→R5→R7→R8 : src=4, dst=6
      */
     s->num_vehicles = 28; s->total_time_steps = 15;
 
@@ -466,7 +424,7 @@ static void initVelachery(SimCtx *s) {
 }
 
 /*
- * FIX 3: Scale vehicles up or down to match requested count.
+ Scale vehicles up or down to match requested count.
  * Fewer → keep first N by index (earliest entries preserved).
  * More  → duplicate existing vehicles with evenly spread entry times.
  */
@@ -474,21 +432,18 @@ static void scaleVehicles(SimCtx *s, int target) {
     int base = s->num_vehicles;
     if (target <= 0 || target == base) return;
     if (target > MAX_VEHICLES) target = MAX_VEHICLES;
-
     if (target < base) {
         s->num_vehicles = target;
         return;
     }
-
     int extra = target - base;
     int spread = s->total_time_steps > 1 ? s->total_time_steps : 15;
-
     for (int i = 0; i < extra; i++) {
         Vehicle *src = &s->vehicles[i % base];
         Vehicle *dst = &s->vehicles[base + i];
         *dst = *src;
         dst->id            = base + i;
-        dst->entry_time    = (i * spread) / extra;
+        dst->entry_time    = (i * spread) / extra; // Time-spread new entries across the simulation duration
         dst->active        = 0;
         dst->completed     = 0;
         dst->counted_this_step = 0;
@@ -499,7 +454,7 @@ static void scaleVehicles(SimCtx *s, int target) {
     s->num_vehicles = target;
 }
 
-/* ---- Simulation logic ---- */
+/*  Simulation logic  */
 static int hasEmergency(SimCtx *s, int rid) {
     Road *r = &s->roads[rid];
     for (int i = 0; i < r->queue_size; i++) {
@@ -561,7 +516,7 @@ static void updateSignals(SimCtx *s) {
                 next = force;
             } else {
                 for (int r = 1; r <= in->num_incoming; r++) {
-                    int idx = (in->current_green_index + r) % in->num_incoming;
+                    int idx = (in->current_green_index + r) % in->num_incoming;   // round-robin signal switching
                     if (!qEmpty(s, in->incoming_roads[idx])) { next = idx; break; }
                 }
             }
@@ -602,7 +557,7 @@ static void enforceSafeDistance(SimCtx *s, int rid) {
         if (vi < 0) continue;
         s->vehicles[vi].position = pos;
         if (pos > 0) {
-            int aidx = (r->queue_front + pos - 1) % MAX_QUEUE;
+            int aidx = (r->queue_front + pos - 1) % MAX_QUEUE;  // pREVIOUS VEHICLE INDEX
             int ai   = findV(s, r->vehicle_queue[aidx]);
             if (ai < 0) continue;
             int gap = pos - s->vehicles[ai].position;
@@ -653,27 +608,24 @@ static void detectSpillback(SimCtx *s, int rid) {
 }
 
 /*
- * FIX 2: Hard-zero congestion when road is empty.
- * EMA would previously keep congestion > 0 even after all vehicles left.
+ EMA would previously keep congestion > 0 even after all vehicles left.
  */
 static void updateCongestion(SimCtx *s, int rid) {
     Road *r = &s->roads[rid];
     if (r->capacity == 0) return;
     int cnt = r->queue_size;   /* use queue_size = vehicles physically on road */
-
     if (cnt == 0) {
         r->raw_congestion   = 0;
         r->congestion_index = 0;
         return;
     }
-
     r->raw_congestion = (cnt * 100) / r->capacity;
     if (r->raw_congestion > 100) r->raw_congestion = 100;
-    r->congestion_index = (EMA_ALPHA * r->raw_congestion + (100 - EMA_ALPHA) * r->congestion_index) / 100;
-
+    r->congestion_index = (EMA_ALPHA * r->raw_congestion + (100 - EMA_ALPHA) * r->congestion_index) / 100;  // Congestion index smoothed
     if (cnt >= r->congestion_threshold) {
         int excess = cnt - r->congestion_threshold;
-        int red = excess * 20; if (red > 85) red = 85;
+        int red = excess * 20; 
+        if (red > 85) red = 85;
         for (int pos = 0; pos < r->queue_size; pos++) {
             int idx = (r->queue_front + pos) % MAX_QUEUE;
             int vi  = findV(s, r->vehicle_queue[idx]);
@@ -692,9 +644,9 @@ static int detectDeadlock(SimCtx *s) {
     for (int i = 0; i < s->num_roads; i++) total += s->roads[i].queue_size;
     if (!total) return 0;
     for (int i = 0; i < s->num_intersections; i++) {
-        int gr = s->intersections[i].incoming_roads[s->intersections[i].current_green_index];
+        int gr = s->intersections[i].incoming_roads[s->intersections[i].current_green_index];      
         if (!qEmpty(s, gr)) return 0;
-        int hw = 0;
+        int hw = 0;                                                                 // Has waiting vehicles 
         for (int r = 0; r < s->intersections[i].num_incoming; r++)
             if (r != s->intersections[i].current_green_index && !qEmpty(s, s->intersections[i].incoming_roads[r]))
                 { hw = 1; break; }
@@ -719,9 +671,9 @@ static void resolveDeadlock(SimCtx *s) {
 }
 
 /*
- * FIX 1: moveVehicles — all roads/zones processed uniformly each step.
- * Pass 1: advance one vehicle per intersection (green road).
- * Pass 2: accumulate waiting time on ALL red roads across ALL zones.
+ moveVehicles — all roads/zones processed uniformly each step.
+ Pass 1: advance one vehicle per intersection (green road).
+ Pass 2: accumulate waiting time on ALL red roads across ALL zones.
  */
 static void moveVehicles(SimCtx *s) {
     /* Pass 1: move green-road head vehicle at every intersection */
@@ -741,9 +693,10 @@ static void moveVehicles(SimCtx *s) {
             if (in->outgoing_roads[o] == dest) { target = dest; break; }
 
         /* Pass B: lookahead — find an outgoing road whose downstream
-         * intersection has dest in its own outgoing set.
-         * This lets vehicles at I1 route toward R6 via R5→I3→R6
-         * instead of greedily taking R1 (wrong exit). */
+          intersection has dest in its own outgoing set.
+          This lets vehicles at I1 route toward R6 via R5→I3→R6
+          instead of greedily taking R1 (wrong exit). */
+        // Greedy algorithm  
         if (target < 0) {
             for (int o = 0; o < in->num_outgoing; o++) {
                 int via_road  = in->outgoing_roads[o];
@@ -785,15 +738,15 @@ static void moveVehicles(SimCtx *s) {
         }
 
         /* Pass D: safe fallback — only use first outgoing if dest is an
-         * exit road (inter_out=-1) reachable from first outgoing,
-         * or if no better path found at all */
+          exit road (inter_out=-1) reachable from first outgoing,
+          or if no better path found at all */
         if (target < 0 && in->num_outgoing > 0) {
             /* Prefer outgoing roads that are NOT immediate exits
-             * when dest is not an immediate exit either */
+              when dest is not an immediate exit either */
             int dest_is_exit = (s->roads[dest].intersection_out < 0);
             if (dest_is_exit) {
                 /* dest exits the network — take the first outgoing road
-                 * that is NOT itself an exit (keep routing through network) */
+                  that is NOT itself an exit (keep routing through network) */
                 for (int o = 0; o < in->num_outgoing; o++) {
                     if (s->roads[in->outgoing_roads[o]].intersection_out >= 0) {
                         target = in->outgoing_roads[o];
@@ -848,7 +801,7 @@ static void moveVehicles(SimCtx *s) {
             }
         }
     }
-}
+} 
 
 static void recordMetrics(SimCtx *s, int t) {
     for (int i = 0; i < s->num_roads; i++) {
@@ -862,10 +815,6 @@ static void recordMetrics(SimCtx *s, int t) {
         if (s->vehicles[i].active) s->vehicles[i].travel_time++;
 }
 
-/*
- * FIX 1 (cont): snapshot records queue_size (actual on-road count) and
- * raw_congestion (true %), not the EMA-lagged congestion_index.
- */
 static void recordSnapshot(SimCtx *s, int t) {
     if (t >= MAX_STEPS) return;
     StepSnapshot *ss = &s->steps[t];
