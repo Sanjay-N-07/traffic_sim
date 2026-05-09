@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define MAX_ROADS          15
-#define MAX_INTERSECTIONS   8
+#define MAX_ROADS           15
+#define MAX_INTERSECTIONS    8
 #define MAX_VEHICLES       300
 #define MAX_QUEUE           80
 #define SAFE_DISTANCE        2
@@ -307,10 +307,10 @@ static void initAdyar(SimCtx *s) {
     setVeh(s, 8, 8, 2,0,4,30,EMERGENCY);/* R1→R5 emerg */
     setVeh(s, 9, 9, 3,2,1,30,NORMAL);   /* R3→R2      */
     setVeh(s,10,10, 3,2,1,25,NORMAL);
-    setVeh(s,11,11, 2,5,8,25,NORMAL);   /* R6→R2 */
-    setVeh(s,12,12, 2,5,8,25,NORMAL);
-    setVeh(s,13,13, 3,5,8,25,NORMAL);   /* R6→dest R9 */
-    setVeh(s,14,14, 4,5,8,25,EMERGENCY);/* R6→R9 emerg */
+    setVeh(s,11,11, 2,7,8,25,NORMAL);   /* R6→R2 */
+    setVeh(s,12,12, 2,7,8,25,NORMAL);
+    setVeh(s,13,13, 3,7,8,25,NORMAL);   /* R6→dest R9 */
+    setVeh(s,14,14, 4,7,8,25,EMERGENCY);/* R6→R9 emerg */
     setVeh(s,15,15, 5,7,8,25,NORMAL);   /* R8→R9 */
     setVeh(s,16,16, 5,0,1,30,NORMAL);   /* R1→R2 */
     setVeh(s,17,17, 5,2,4,25,NORMAL);   /* R3→R5 */
